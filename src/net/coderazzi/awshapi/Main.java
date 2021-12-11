@@ -20,6 +20,18 @@ public class Main {
     private static final String ISSUER_FORMAT = "https://cognito-idp.%s.amazonaws.com/%s";
     private static final String URI_FORMAT = "http://{ip_port}{method}";
 
+    private static final String INTEGRATION_PAYLOAD_FORMAT_VERSION = "payloadFormatVersion";
+    private static final String DEFAULT_INTEGRATION_PAYLOAD_FORMAT_VERSION = "1.0";
+    public static final String INTEGRATION_TYPE = "type";
+    public static final String DEFAULT_INTEGRATION_TYPE = "http_proxy";
+    public static final String INTEGRATION_CONNECTION_TYPE = "connectionType";
+    public static final String DEFAULT_INTEGRATION_CONNECTION_TYPE = "INTERNET";
+    public static final String YAML_TAGS = "tags";
+    public static final String INTEGRATION_HTTP_METHOD = "httpMethod";
+    public static final String INTEGRATION_URI = "uri";
+    public static final String SECURITY = "security";
+    public static final String X_AMAZON_APIGATEWAY_INTEGRATION = "x-amazon-apigateway-integration";
+
 
     public void handle(String []args) throws IOException{
         if (args.length != 8) {
@@ -63,9 +75,9 @@ public class Main {
             securityScope.add(tmp);
 
             final Map<String, String> integration = new LinkedHashMap<>();
-            integration.put("payloadFormatVersion", "1.0");
-            integration.put("type", "http_proxy");
-            integration.put("connectionType", "INTERNET");
+            integration.put(INTEGRATION_PAYLOAD_FORMAT_VERSION, DEFAULT_INTEGRATION_PAYLOAD_FORMAT_VERSION);
+            integration.put(INTEGRATION_TYPE, DEFAULT_INTEGRATION_TYPE);
+            integration.put(INTEGRATION_CONNECTION_TYPE, DEFAULT_INTEGRATION_CONNECTION_TYPE);
 
             getMap(specification, YAML_PATHS).forEach((path, pathSpec) -> {
                 String location = YAML_PATHS + "." + path;
@@ -73,12 +85,12 @@ public class Main {
                     String subLocation = location + "." + method;
 
                     Map<String, Object> methodSpec = castToMap(v, subLocation);
-                    List<String> tags = castToList(methodSpec.get("tags"), subLocation);
+                    List<String> tags = castToList(methodSpec.get(YAML_TAGS), subLocation);
 
-                    integration.put("httpMethod", method.toUpperCase(Locale.ROOT));
-                    integration.put("uri", getUri(path, tags, tagUriMap));
-                    methodSpec.put("security", securityScope);
-                    methodSpec.put("x-amazon-apigateway-integration", integration);
+                    integration.put(INTEGRATION_HTTP_METHOD, method.toUpperCase(Locale.ROOT));
+                    integration.put(INTEGRATION_URI, getUri(path, tags, tagUriMap));
+                    methodSpec.put(SECURITY, securityScope);
+                    methodSpec.put(X_AMAZON_APIGATEWAY_INTEGRATION, integration);
                 });
             });
         }
