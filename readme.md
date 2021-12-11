@@ -33,12 +33,12 @@ Alternatively, security plus scopes can be specified:
 
 A better option to handle methods is using tags associated to that method:
 
-- *tag.TAG=uri[,security_name,scopes]*
+- *path.TAG=uri[,security_name,scopes]*
 
 In this case, the final URI uses the specified uri, plus the method. 
-For example, if a method /user/post has a tag Frontend, and we define:
+For example, if a method /user/post has a path Frontend, and we define:
 
-    tag.Frontend=http://3.64.241.105:12121
+    path.Frontend=http://3.64.241.105:12121
 
 The endpoint would be: http://3.64.241.105:12121/user/post
 

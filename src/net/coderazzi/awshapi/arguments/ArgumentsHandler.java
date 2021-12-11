@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 public class ArgumentsHandler {
 
     private static final Map<String, MainConsumer> argumentHandlers = new HashMap<>();
-    private static final Map<String, SecurityConsumer> securityHandlers = new HashMap<>();
+    private static final Map<String, SecurityConsumer> securityConsumers = new HashMap<>();
     private static final Map<String, Getter<Security>> securityCheckers = new HashMap<>();
 
     private static final String SECURITY="security";
@@ -16,10 +16,14 @@ public class ArgumentsHandler {
     private static final String SECURITY_AUDIENCES = "audiences";
     private static final String SECURITY_TYPE = "type";
     private static final String SECURITY_AUTHORIZER_TYPE = "authorizerType";
+    private static final String TAG="tag";
+    private static final String METHOD="method";
 
-    private Map<String, Security> securityInstances;
+    private final Map<String, Security> securities = new HashMap<>();
+    private final Map<String, Path> tags = new HashMap<>();
+    private final Map<String, Path> methods = new HashMap<>();
 
-    public ArgumentsHandler(String args[]){;
+    public ArgumentsHandler(String []args){
         Pattern p = Pattern.compile(String.format("^(?:--)?(%s)\\.([^=]+)=(.+)$",
                 String.join("|", argumentHandlers.keySet())));
         for (String arg: args) {
@@ -39,7 +43,7 @@ public class ArgumentsHandler {
                 throw new ArgumentException(arg + " : " + ex.getMessage());
             }
         }
-        securityInstances.forEach((name, instance)->{
+        securities.forEach((name, instance)->{
             if (!name.isEmpty()) {
                 securityCheckers.forEach((prop, checker) -> {
                     if (null==checker.get(instance)) {
@@ -51,78 +55,73 @@ public class ArgumentsHandler {
         });
     }
 
+    /**
+     * Handles a tag definition: tag.NAME=value, converting the NAME to lowercase
+     */
+    private void handleTag(String definition, String value){
+        handleTagOrMethod(tags, value, "/" + definition.toLowerCase(Locale.ROOT));
+    }
+
+
+    /**
+     * Handles a method definition: method.path1...pathN=value, replacing the dots in the paths with '/'
+     */
+    private void handleMethod(String definition, String value){
+        handleTagOrMethod(methods, value, "/" + definition.replace(".", "/"));
+    }
+
+
+    private void handleTagOrMethod(Map<String, Path> map, String value, String definition){
+        if (map.containsKey(definition)) {
+            throw ArgumentException.alreadySpecified();
+        }
+        List<String> parts = convertToNonEmptyList(value);
+        Path path = new Path(parts.get(0));
+        if (parts.size() > 1) {
+            String securityName = parts.get(1);
+            if (securities.get(securityName) == null) {
+                throw new ArgumentException(securityName + " is not a provided security name");
+            }
+            path.setSecurity(parts.get(1), parts.subList(Math.min(2, parts.size()-1), parts.size()-1));
+        }
+        map.put(definition, path);
+    }
+
+
     private void handleSecurity(String definition, String value){
         if ("name".equals(definition)){
-            if (securityInstances != null) {
+            if (!securities.isEmpty()) {
                 throw ArgumentException.alreadySpecified();
             }
             Security defaultSecurity = new Security(null);
-            securityInstances = new HashMap<>();
-            securityInstances.put("", defaultSecurity);
-            convertToNonEmptyList(value).forEach( x-> securityInstances.put(x, new Security(defaultSecurity)));
+            securities.put("", defaultSecurity);
+            convertToNonEmptyList(value).forEach( x-> securities.put(x, new Security(defaultSecurity)));
         } else {
-            handleGeneric(securityHandlers, securityInstances, definition, (i, h) -> {
-                ((SecurityConsumer)h).securityHandle((Security)i, value);
-            });
-        }
-    }
-
-
-    private void handleGeneric(Map<String, ?> handlers,
-                               Map<String, ?> instances,
-                               String definition,
-                               ObjectHandler objectHandler){
-        String instance = "";
-        Object consumer = handlers.get(definition);
-        if (consumer == null) {
-            int last = definition.lastIndexOf('.');
-            if (last != -1) {
-                instance = definition.substring(last + 1).trim();
-                consumer = handlers.get(definition.substring(0, last).trim());
+            String name = "";
+            SecurityConsumer securityConsumer = securityConsumers.get(definition);
+            if (securityConsumer == null) {
+                int last = definition.lastIndexOf('.');
+                if (last != -1) {
+                    name = definition.substring(last + 1).trim();
+                    securityConsumer = securityConsumers.get(definition.substring(0, last).trim());
+                }
             }
+            Security security = securities.get(name);
+            if (security==null || securityConsumer==null) {
+                throw ArgumentException.unexpected();
+            }
+            securityConsumer.securityHandle(security, value);
         }
-        Object instanceObject = instance==null? null : instances.get(instance);
-        if (instanceObject==null || consumer==null) {
-            throw ArgumentException.unexpected();
-        }
-        objectHandler.objectHandle(instanceObject, consumer);
     }
 
 
-    interface ObjectHandler {
-        void objectHandle(Object instance, Object handler);
-    }
 
-    interface MainConsumer {
-        void consume(ArgumentsHandler self, String key, String value);
-    }
-
-    interface SecurityConsumer {
-        void securityHandle(Security s, String arg);
-    }
-
-    interface Getter<T> {
-        Object get(T t);
-    }
-
-    static {
-        argumentHandlers.put(SECURITY, (self, k, v) -> self.handleSecurity(k, v));
-
-        securityHandlers.put(SECURITY_IDENTITY_SOURCE, (s, a) -> s.setIdentitySource(a));
-        securityHandlers.put(SECURITY_ISSUER, (s, a) -> s.setIssuer(a));
-        securityHandlers.put(SECURITY_AUDIENCES, (s, a) -> s.setAudiences(convertToNonEmptyList(a)));
-        securityHandlers.put(SECURITY_TYPE, (s, a) -> s.setType(a));
-        securityHandlers.put(SECURITY_AUTHORIZER_TYPE, (s, a) -> s.setAuthorizerType(a));
-
-        securityCheckers.put(SECURITY_IDENTITY_SOURCE, s -> s.getIdentitySource());
-        securityCheckers.put(SECURITY_ISSUER, s -> s.getIssuer());
-        securityCheckers.put(SECURITY_AUDIENCES, s -> s.getAudiences());
-        securityCheckers.put(SECURITY_TYPE, s -> s.getType());
-        securityCheckers.put(SECURITY_AUTHORIZER_TYPE, s -> s.getAuthorizerType());
-    }
-
+    /**
+     * Splits a comma-separated string into a list of trimmed Strings, all non-blank.
+     * An ArgumentException is raised if the resulting list were empty.
+     */
     private static List<String> convertToNonEmptyList(String arg){
-        String split[] = arg.split(",");
+        String []split = arg.split(",");
         List<String> ret = new ArrayList<>(split.length);
         for (String each : split) {
             String trimmed = each.trim();
@@ -136,8 +135,34 @@ public class ArgumentsHandler {
         return ret;
     }
 
-    public static void main(String[] args) {
-        new ArgumentsHandler(args);
+    static {
+        argumentHandlers.put(SECURITY, ArgumentsHandler::handleSecurity);
+        argumentHandlers.put(TAG, ArgumentsHandler::handleTag);
+        argumentHandlers.put(METHOD, ArgumentsHandler::handleMethod);
+
+        securityConsumers.put(SECURITY_IDENTITY_SOURCE, Security::setIdentitySource);
+        securityConsumers.put(SECURITY_ISSUER, Security::setIssuer);
+        securityConsumers.put(SECURITY_AUDIENCES, (s, a) -> s.setAudiences(convertToNonEmptyList(a)));
+        securityConsumers.put(SECURITY_TYPE, Security::setType);
+        securityConsumers.put(SECURITY_AUTHORIZER_TYPE, Security::setAuthorizerType);
+
+        securityCheckers.put(SECURITY_IDENTITY_SOURCE, Security::getIdentitySource);
+        securityCheckers.put(SECURITY_ISSUER, Security::getIssuer);
+        securityCheckers.put(SECURITY_AUDIENCES, Security::getAudiences);
+        securityCheckers.put(SECURITY_TYPE, Security::getType);
+        securityCheckers.put(SECURITY_AUTHORIZER_TYPE, Security::getAuthorizerType);
+    }
+
+    interface MainConsumer {
+        void consume(ArgumentsHandler self, String key, String value);
+    }
+
+    interface SecurityConsumer {
+        void securityHandle(Security s, String arg);
+    }
+
+    interface Getter<T> {
+        Object get(T t);
     }
 
 }

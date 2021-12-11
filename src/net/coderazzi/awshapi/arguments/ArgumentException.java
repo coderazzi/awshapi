@@ -9,10 +9,6 @@ public class ArgumentException extends RuntimeException{
         return new ArgumentException("already specified");
     }
 
-    public static ArgumentException badSpecified()  {
-        return new ArgumentException("bad specified");
-    }
-
     public static ArgumentException invalidValue(String value){
         return new ArgumentException("invalid value: " + value);
     }

@@ -31,7 +31,7 @@
         <url>https://github.com/coderazzi/awshapi</url>
         <connection>scm:git:ssh://git@github.com/coderazzi/awshapi</connection>
         <developerConnection>scm:git:ssh://git@github.com/coderazzi/awshapi</developerConnection>
-        <tag>awshapi-0.0.0</tag>
+        <tag>awshapi-1.0.0</tag>
     </scm>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -96,7 +96,7 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.28</version>
+            <version>1.29</version>
         </dependency>
     </dependencies>
     <profiles>
