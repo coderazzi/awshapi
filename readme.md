@@ -2,6 +2,7 @@
 
 * Website: https://coderazzi.net/java/openapi4aws
 * Github: https://github.com/coderazzi/openapi4aws
+* License: MIT license
 
 This is utility to enrich an openapi specification with information specific for the AWS API Gateway.
 It allows defining route integrations and authorizers to do automatic (re-)imports in API Gateway.
@@ -10,11 +11,9 @@ The openapi specification is extended on two parts:
 - security: optionally, adding one or more authorizers.
 - paths: extending each method with the associated authorizer and defining an endpoint.
 
-## Usage
-
 The input to this utility is passed as parameters:
 
-### Security / Authorizers
+## Security / Authorizers
 
 To specify an authorizer, use the following mandatory parameters:
 - **security.name**: name of the authorizer
@@ -34,7 +33,7 @@ It is possible then to specify a different parameter for each authorizer using t
 - **security.audience.*SECURITY_NAME***=audience
 - **security.issuer.*SECURITY_NAME***=issuer
 
-### Paths / Integrations
+## Paths / Integrations
 
 To define routes, the syntax is:
 
@@ -51,7 +50,7 @@ Alternatively, security plus scopes can be specified:
 
 In this case, it uses the authorizer with name "authorizer1", with scopes "user.email" and "user.id"
 
-### Paths / Integrations Using tags
+## Paths / Integrations Using tags
 
 A better option to define integrations is defining openapi tags associated for that path, 
 and using then the following parameters:
