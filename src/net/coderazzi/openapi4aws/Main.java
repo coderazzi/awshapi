@@ -1,9 +1,9 @@
-package net.coderazzi.awshapi;
+package net.coderazzi.openapi4aws;
 
-import net.coderazzi.awshapi.arguments.ArgumentException;
-import net.coderazzi.awshapi.arguments.ArgumentsHandler;
-import net.coderazzi.awshapi.arguments.Security;
-import net.coderazzi.awshapi.arguments.Specification;
+import net.coderazzi.openapi4aws.arguments.ArgumentException;
+import net.coderazzi.openapi4aws.arguments.ArgumentsHandler;
+import net.coderazzi.openapi4aws.arguments.Security;
+import net.coderazzi.openapi4aws.arguments.Specification;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 

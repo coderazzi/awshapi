@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.coderazzi</groupId>
-    <artifactId>awshapi</artifactId>
+    <artifactId>opeanapi4aws</artifactId>
     <packaging>jar</packaging>
     <version>1.0.0-SNAPSHOT</version>
-    <name>awshapi</name>
+    <name>opeanapi4aws</name>
     <description>Artifact to extend openapi specifications to define AWS-specific mappings.</description>
-    <url>https://coderazzi.net/awshapi</url>
+    <url>https://coderazzi.net/java/opeanapi4aws</url>
     <organization>
         <name>coderazzi</name>
         <url>https://coderazzi.net</url>
@@ -25,13 +25,13 @@
         </license>
     </licenses>
     <issueManagement>
-        <url>https://github.com/coderazzi/awshapi/issues</url>
+        <url>https://github.com/coderazzi/opeanapi4aws/issues</url>
     </issueManagement>
     <scm>
-        <url>https://github.com/coderazzi/awshapi</url>
-        <connection>scm:git:ssh://git@github.com/coderazzi/awshapi</connection>
-        <developerConnection>scm:git:ssh://git@github.com/coderazzi/awshapi</developerConnection>
-        <tag>awshapi-1.0.0</tag>
+        <url>https://github.com/coderazzi/opeanapi4aws</url>
+        <connection>scm:git:ssh://git@github.com/coderazzi/opeanapi4aws</connection>
+        <developerConnection>scm:git:ssh://git@github.com/coderazzi/opeanapi4aws</developerConnection>
+        <tag>opeanapi4aws-1.0.0</tag>
     </scm>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -53,7 +53,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.5.3</version>
                 <configuration>
-                    <tagBase>file:///home/coderazzi/development/awshapi</tagBase>
+                    <tagBase>file:///home/coderazzi/development/opeanapi4aws</tagBase>
                     <mavenExecutorId>forked-specification</mavenExecutorId>
                 </configuration>
             </plugin>
@@ -83,7 +83,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <doctitle>AWShAPI</doctitle>
+                    <doctitle>opeanapi4aws</doctitle>
                     <show>protected</show>
                     <links>
                         <link>https://docs.oracle.com/javase/8/docs/api/</link>

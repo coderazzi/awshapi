@@ -1,4 +1,4 @@
-package net.coderazzi.awshapi.arguments;
+package net.coderazzi.openapi4aws.arguments;
 
 import java.io.IOException;
 import java.nio.file.*;

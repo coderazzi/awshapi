@@ -1,4 +1,4 @@
-package net.coderazzi.awshapi.arguments;
+package net.coderazzi.openapi4aws.arguments;
 
 public class ArgumentException extends RuntimeException{
     public ArgumentException(String msg) {
