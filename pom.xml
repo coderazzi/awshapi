@@ -54,7 +54,7 @@
                 <version>2.5.3</version>
                 <configuration>
                     <tagBase>file:///home/coderazzi/development/awshapi</tagBase>
-                    <mavenExecutorId>forked-path</mavenExecutorId>
+                    <mavenExecutorId>forked-specification</mavenExecutorId>
                 </configuration>
             </plugin>
             <plugin>

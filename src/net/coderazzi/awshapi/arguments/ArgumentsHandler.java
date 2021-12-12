@@ -1,5 +1,8 @@
 package net.coderazzi.awshapi.arguments;
 
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -10,21 +13,23 @@ public class ArgumentsHandler {
     private static final Map<String, SecurityConsumer> securityConsumers = new HashMap<>();
     private static final Map<String, Getter<Security>> securityCheckers = new HashMap<>();
 
-    private static final String SECURITY="security";
+    private static final String SECURITY="security.";
     private static final String SECURITY_IDENTITY_SOURCE = "identity_source";
     private static final String SECURITY_ISSUER = "issuer";
     private static final String SECURITY_AUDIENCES = "audiences";
     private static final String SECURITY_TYPE = "type";
     private static final String SECURITY_AUTHORIZER_TYPE = "authorizerType";
-    private static final String TAG="tag";
-    private static final String METHOD="method";
+    private static final String TAG="tag.";
+    private static final String METHOD="method.";
+    private static final String INPUT="input";
 
-    private final Map<String, Security> securities = new HashMap<>();
-    private final Map<String, Path> tags = new HashMap<>();
-    private final Map<String, Path> methods = new HashMap<>();
+    private final Map<String, Security> securities = new LinkedHashMap<>();
+    private final Map<String, Specification> tags = new HashMap<>();
+    private final Map<String, Specification> methods = new HashMap<>();
+    private List<String> input = null;
 
-    public ArgumentsHandler(String []args){
-        Pattern p = Pattern.compile(String.format("^(?:--)?(%s)\\.([^=]+)=(.+)$",
+    public ArgumentsHandler(String []args) {
+        Pattern p = Pattern.compile(String.format("^(?:--)?(%s)([^=]*)=(.+)$",
                 String.join("|", argumentHandlers.keySet())));
         for (String arg: args) {
             try {
@@ -33,7 +38,7 @@ public class ArgumentsHandler {
                     String area = m.group(1);
                     String type = m.group(2).trim();
                     String value = m.group(3).trim();
-                    if (!type.isEmpty() && !value.isEmpty()) {
+                    if (!value.isEmpty()) {
                         argumentHandlers.get(area).consume(this, type, value);
                         continue;
                     }
@@ -43,16 +48,68 @@ public class ArgumentsHandler {
                 throw new ArgumentException(arg + " : " + ex.getMessage());
             }
         }
+        if (input==null) {
+            throw new ArgumentException("Missing " + INPUT);
+        }
         securities.forEach((name, instance)->{
             if (!name.isEmpty()) {
                 securityCheckers.forEach((prop, checker) -> {
                     if (null==checker.get(instance)) {
-                        String missing = SECURITY + "." + prop;
+                        String missing = SECURITY + prop;
                         throw new ArgumentException("Missing " + missing + " or " + missing + "." + name);
                     }
                 });
             }
         });
+    }
+
+    public Map<String, Security> getSecurities() {
+        return Collections.unmodifiableMap(securities);
+    }
+
+    public Specification getSpecification(String method, List<String> tags){
+        Specification ret = methods.get(method);
+        if (ret==null){
+            for (String tag : tags){
+                ret = this.tags.get(tag.toLowerCase(Locale.ROOT));
+                if (ret != null) {
+                    break;
+                }
+            }
+        }
+        return ret;
+    }
+
+    public Set<Path> getInput() throws IOException{
+        Set<Path> ret = new HashSet<>();
+        for (String each : input) {
+            final PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:"+each);
+            Files.walkFileTree(FileSystems.getDefault().getPath(""), new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                    if (pathMatcher.matches(path)) {
+                        ret.add(path);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+        return ret;
+    }
+
+    private void handleInput(String value, String definition) {
+        if (!value.isEmpty()){
+            throw ArgumentException.unexpected();
+        }
+        if (input != null) {
+            throw ArgumentException.alreadySpecified();
+        }
+        input = convertToNonEmptyList(definition);
     }
 
     /**
@@ -71,20 +128,20 @@ public class ArgumentsHandler {
     }
 
 
-    private void handleTagOrMethod(Map<String, Path> map, String value, String definition){
+    private void handleTagOrMethod(Map<String, Specification> map, String value, String definition){
         if (map.containsKey(definition)) {
             throw ArgumentException.alreadySpecified();
         }
         List<String> parts = convertToNonEmptyList(value);
-        Path path = new Path(parts.get(0));
+        Specification specification = new Specification(parts.get(0)); //uri
         if (parts.size() > 1) {
-            String securityName = parts.get(1);
+            String securityName = parts.get(1); //note that it cannot be empty / blank, and is already trimmed
             if (securities.get(securityName) == null) {
                 throw new ArgumentException(securityName + " is not a provided security name");
             }
-            path.setSecurity(parts.get(1), parts.subList(Math.min(2, parts.size()-1), parts.size()-1));
+            specification.setSecurity(parts.get(1), parts.subList(Math.min(2, parts.size()-1), parts.size()-1));
         }
-        map.put(definition, path);
+        map.put(definition, specification);
     }
 
 
@@ -139,6 +196,7 @@ public class ArgumentsHandler {
         argumentHandlers.put(SECURITY, ArgumentsHandler::handleSecurity);
         argumentHandlers.put(TAG, ArgumentsHandler::handleTag);
         argumentHandlers.put(METHOD, ArgumentsHandler::handleMethod);
+        argumentHandlers.put(INPUT, ArgumentsHandler::handleInput);
 
         securityConsumers.put(SECURITY_IDENTITY_SOURCE, Security::setIdentitySource);
         securityConsumers.put(SECURITY_ISSUER, Security::setIssuer);
@@ -163,6 +221,10 @@ public class ArgumentsHandler {
 
     interface Getter<T> {
         Object get(T t);
+    }
+
+    public static void main(String[] args) {
+        new ArgumentsHandler(args);
     }
 
 }

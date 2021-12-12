@@ -10,11 +10,11 @@ public class Security {
     private final static String SECURITY_TYPE="oauth2";
     private final static String SECURITY_AUTHORIZER_TYPE="jwt";
 
-    private Security defaultSecurity;
+    private final Security defaultSecurity;
+    private final Map<Object, Object> flows = SECURITY_FLOWS;
     private String identitySource;
     private String issuer;
     private List<String> audiences;
-    private Map<Object, Object> flows = SECURITY_FLOWS;
     private String type;
     private String authorizerType;
 

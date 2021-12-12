@@ -2,12 +2,12 @@ package net.coderazzi.awshapi.arguments;
 
 import java.util.List;
 
-public class Path {
+public class Specification {
     private final String uri;
     private String security;
     private List<String> scopes;
 
-    public Path(String uri){
+    public Specification(String uri){
         this.uri = uri;
     }
 
@@ -16,14 +16,24 @@ public class Path {
         this.scopes = scopes;
     }
 
+    /**
+     * @return the defined scopes. This can be null if getSecurity is null, otherwise it is a valid list,
+     * which could be empty, but cannot contain any blank strings
+     */
     public List<String> getScopes() {
         return scopes;
     }
 
+    /**
+     * @return the defined security. It can be null, but not blank
+     */
     public String getSecurity() {
         return security;
     }
 
+    /**
+     * @return the defined URI, which cannot be null or blank.
+     */
     public String getUri() {
         return uri;
     }
