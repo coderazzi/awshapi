@@ -6,6 +6,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ArgumentsHandler {
 
@@ -16,16 +17,16 @@ public class ArgumentsHandler {
     private static final String SECURITY="security.";
     private static final String SECURITY_IDENTITY_SOURCE = "identity_source";
     private static final String SECURITY_ISSUER = "issuer";
-    private static final String SECURITY_AUDIENCES = "audiences";
+    private static final String SECURITY_AUDIENCES = "audience";
     private static final String SECURITY_TYPE = "type";
     private static final String SECURITY_AUTHORIZER_TYPE = "authorizerType";
     private static final String TAG="tag.";
-    private static final String METHOD="method.";
+    private static final String PATH ="path.";
     private static final String INPUT="input";
 
     private final Map<String, Security> securities = new LinkedHashMap<>();
     private final Map<String, Specification> tags = new HashMap<>();
-    private final Map<String, Specification> methods = new HashMap<>();
+    private final Map<String, Specification> paths = new HashMap<>();
     private List<String> input = null;
 
     public ArgumentsHandler(String []args) {
@@ -64,11 +65,12 @@ public class ArgumentsHandler {
     }
 
     public Map<String, Security> getSecurities() {
-        return Collections.unmodifiableMap(securities);
+        return securities.entrySet().stream().filter(x -> !x.getKey().isEmpty())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    public Specification getSpecification(String method, List<String> tags){
-        Specification ret = methods.get(method);
+    public Specification getSpecification(String path, List<String> tags){
+        Specification ret = paths.get(path);
         if (ret==null){
             for (String tag : tags){
                 ret = this.tags.get(tag.toLowerCase(Locale.ROOT));
@@ -116,19 +118,19 @@ public class ArgumentsHandler {
      * Handles a tag definition: tag.NAME=value, converting the NAME to lowercase
      */
     private void handleTag(String definition, String value){
-        handleTagOrMethod(tags, value, "/" + definition.toLowerCase(Locale.ROOT));
+        handleTagOrPath(tags, value, definition.toLowerCase(Locale.ROOT));
     }
 
 
     /**
      * Handles a method definition: method.path1...pathN=value, replacing the dots in the paths with '/'
      */
-    private void handleMethod(String definition, String value){
-        handleTagOrMethod(methods, value, "/" + definition.replace(".", "/"));
+    private void handlePath(String definition, String value){
+        handleTagOrPath(paths, value, "/" + definition.replace(".", "/"));
     }
 
 
-    private void handleTagOrMethod(Map<String, Specification> map, String value, String definition){
+    private void handleTagOrPath(Map<String, Specification> map, String value, String definition){
         if (map.containsKey(definition)) {
             throw ArgumentException.alreadySpecified();
         }
@@ -139,7 +141,7 @@ public class ArgumentsHandler {
             if (securities.get(securityName) == null) {
                 throw new ArgumentException(securityName + " is not a provided security name");
             }
-            specification.setSecurity(parts.get(1), parts.subList(Math.min(2, parts.size()-1), parts.size()-1));
+            specification.setSecurity(parts.get(1), parts.subList(2, parts.size()));
         }
         map.put(definition, specification);
     }
@@ -195,7 +197,7 @@ public class ArgumentsHandler {
     static {
         argumentHandlers.put(SECURITY, ArgumentsHandler::handleSecurity);
         argumentHandlers.put(TAG, ArgumentsHandler::handleTag);
-        argumentHandlers.put(METHOD, ArgumentsHandler::handleMethod);
+        argumentHandlers.put(PATH, ArgumentsHandler::handlePath);
         argumentHandlers.put(INPUT, ArgumentsHandler::handleInput);
 
         securityConsumers.put(SECURITY_IDENTITY_SOURCE, Security::setIdentitySource);
@@ -221,10 +223,6 @@ public class ArgumentsHandler {
 
     interface Getter<T> {
         Object get(T t);
-    }
-
-    public static void main(String[] args) {
-        new ArgumentsHandler(args);
     }
 
 }

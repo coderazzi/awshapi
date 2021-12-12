@@ -28,7 +28,7 @@ public class Main {
         this.arguments = handler;
     }
 
-    public void handle() throws IOException{
+    public void handle() throws IOException {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         Yaml yaml = new Yaml(options);
@@ -36,6 +36,11 @@ public class Main {
         for (Path path : arguments.getInput()) {
             try( final InputStream is = Files.newInputStream(path) ){
                 specification = yaml.load(is);
+            } catch(ClassCastException cex) {
+                specification = null;
+            }
+            if (specification==null) {
+                errorAndExit("Invalid content in file " + path);
             }
             augment(specification);
             try(final OutputStream os = Files.newOutputStream(path) ){
@@ -53,13 +58,13 @@ public class Main {
         }
 
         getMap(specification, PATHS).forEach((path, pathSpec) -> {
-            String location = PATHS + "." + path;
+            String location = PATHS + ":" + path;
             castToMap(pathSpec, location).forEach((method, v) -> {
-                String subLocation = location + "." + method;
+                String subLocation = location + ":" + method;
 
                 Map<String, Object> methodSpec = castToMap(v, subLocation);
                 List<String> tags = castToList(methodSpec.get("tags"), subLocation);
-                Specification spec = arguments.getSpecification(method, tags);
+                Specification spec = arguments.getSpecification(path, tags);
 
                 if (spec != null) {
                     final Map<String, String> integration = new LinkedHashMap<>();
@@ -72,15 +77,30 @@ public class Main {
 
                     String securitySchema = spec.getSecurity();
                     if (securitySchema != null) {
-                        Map<String, Object> tmp = new LinkedHashMap<>();
-                        tmp.put(securitySchema, spec.getScopes());
+                        Map<String, Object> scopes = new LinkedHashMap<>();
+                        scopes.put(securitySchema, new ArrayList<>(spec.getScopes()));
                         final List<Object> securityScope = new ArrayList<>();
-                        securityScope.add(tmp);
+                        securityScope.add(scopes);
                         methodSpec.put("security", securityScope);
                     }
                 }
             });
         });
+    }
+
+    private Map<String, Object> createSecuritySchema(Security security){
+        Map<String, Object> ret = new LinkedHashMap<>();
+        Map<String, Object> authorizer = new LinkedHashMap<>();
+        Map<String, Object> configuration = new LinkedHashMap<>();
+        ret.put("type", security.getType());
+        ret.put("flows", new HashMap<>(security.getFlows()));
+        ret.put("x-amazon-apigateway-authorizer", authorizer);
+        authorizer.put("identitySource", security.getIdentitySource());
+        authorizer.put("type", security.getAuthorizerType());
+        authorizer.put("jwtConfiguration", configuration);
+        configuration.put("audience", new ArrayList<>(security.getAudiences()));
+        configuration.put("issuer", security.getIssuer());
+        return ret;
     }
 
     @SuppressWarnings("unchecked")
@@ -117,21 +137,6 @@ public class Main {
             }
         }
         return new ArrayList<>();
-    }
-
-    private Map<String, Object> createSecuritySchema(Security security){
-        Map<String, Object> ret = new LinkedHashMap<>();
-        Map<String, Object> authorizer = new LinkedHashMap<>();
-        Map<String, Object> configuration = new LinkedHashMap<>();
-        ret.put("type", security.getType());
-        ret.put("flows", security.getFlows());
-        ret.put("x-amazon-apigateway-authorizer", authorizer);
-        authorizer.put("identitySource", security.getIdentitySource());
-        authorizer.put("type", security.getAuthorizerType());
-        authorizer.put("jwtConfiguration", configuration);
-        configuration.put("audience", security.getAudiences());
-        configuration.put("issuer", security.getIssuer());
-        return ret;
     }
 
     private Map<String, Object> getMap(Map<String, Object> specification, String path){
