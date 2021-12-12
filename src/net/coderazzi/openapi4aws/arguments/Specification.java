@@ -4,11 +4,18 @@ import java.util.List;
 
 public class Specification {
     private final String uri;
+    private final boolean finalUri;
     private String security;
     private List<String> scopes;
 
-    public Specification(String uri) {
-        this.uri = uri;
+    /**
+     * @param uri The defined URI
+     * @param finalUri Set to false for TAG specifications, where the final uri will be composed of this URI plus the
+     *                 used path.
+     */
+    public Specification(String uri, boolean finalUri) {
+        this.uri = !finalUri && uri.endsWith("/") ? uri.substring(0, uri.length()-1) : uri;
+        this.finalUri = finalUri;
     }
 
     public void setSecurity(String security, List<String> scopes) {
@@ -32,9 +39,10 @@ public class Specification {
     }
 
     /**
+     * @param path: the route used, that can be part of the returned URI.
      * @return the defined URI, which cannot be null or blank.
      */
-    public String getUri() {
-        return uri;
+    public String getUri(String path) {
+        return finalUri? uri : uri + path;
     }
 }

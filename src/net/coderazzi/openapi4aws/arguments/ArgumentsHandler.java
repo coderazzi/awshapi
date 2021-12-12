@@ -158,22 +158,22 @@ public class ArgumentsHandler {
      * Handles a tag definition: tag.NAME=value, converting the NAME to lowercase
      */
     private void handleTag(String definition, String value) {
-        handleTagOrPath(tags, value, definition.toLowerCase(Locale.ROOT));
+        handleTagOrPath(tags, value, false, definition.toLowerCase(Locale.ROOT));
     }
 
     /**
      * Handles a method definition: method.path1...pathN=value, replacing the dots in the paths with '/'
      */
     private void handlePath(String definition, String value) {
-        handleTagOrPath(paths, value, "/" + definition.replace(".", "/"));
+        handleTagOrPath(paths, value, true, "/" + definition.replace(".", "/"));
     }
 
-    private void handleTagOrPath(Map<String, Specification> map, String value, String definition) {
+    private void handleTagOrPath(Map<String, Specification> map, String value, boolean isPath, String definition) {
         if (map.containsKey(definition)) {
             throw O4A_Exception.duplicatedArgument();
         }
         List<String> parts = convertToNonEmptyList(value);
-        Specification specification = new Specification(parts.get(0)); //uri
+        Specification specification = new Specification(parts.get(0), isPath); //uri
         if (parts.size() > 1) {
             String securityName = parts.get(1); //note that it cannot be empty / blank, and is already trimmed
             if (securities.get(securityName) == null) {

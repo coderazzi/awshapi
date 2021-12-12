@@ -82,7 +82,7 @@ public class Main {
                     integration.put("type", DEFAULT_INTEGRATION_TYPE);
                     integration.put("connectionType", DEFAULT_INTEGRATION_CONNECTION_TYPE);
                     integration.put("httpMethod", method.toUpperCase(Locale.ROOT));
-                    integration.put("uri", spec.getUri());
+                    integration.put("uri", spec.getUri(path));
                     methodSpec.put("x-amazon-apigateway-integration", integration);
 
                     String securitySchema = spec.getSecurity();
