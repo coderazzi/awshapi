@@ -7,11 +7,11 @@ public class Specification {
     private String security;
     private List<String> scopes;
 
-    public Specification(String uri){
+    public Specification(String uri) {
         this.uri = uri;
     }
 
-    public void setSecurity(String security, List<String> scopes){
+    public void setSecurity(String security, List<String> scopes) {
         this.security = security;
         this.scopes = scopes;
     }

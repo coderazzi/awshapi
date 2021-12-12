@@ -1,5 +1,7 @@
 package net.coderazzi.openapi4aws.arguments;
 
+import net.coderazzi.openapi4aws.O4A_Exception;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -7,8 +9,8 @@ import java.util.Map;
 public class Security {
 
     private final static Map<Object, Object> SECURITY_FLOWS = Collections.emptyMap();
-    private final static String SECURITY_TYPE="oauth2";
-    private final static String SECURITY_AUTHORIZER_TYPE="jwt";
+    private final static String SECURITY_TYPE = "oauth2";
+    private final static String SECURITY_AUTHORIZER_TYPE = "jwt";
 
     private final Security defaultSecurity;
     private final Map<Object, Object> flows = SECURITY_FLOWS;
@@ -18,12 +20,12 @@ public class Security {
     private String type;
     private String authorizerType;
 
-    public Security(Security defaultSecurity){
+    public Security(Security defaultSecurity) {
         this.defaultSecurity = defaultSecurity;
     }
 
     public String getIdentitySource() {
-        return identitySource==null && defaultSecurity!=null? defaultSecurity.getIdentitySource() : identitySource;
+        return identitySource == null && defaultSecurity != null ? defaultSecurity.getIdentitySource() : identitySource;
     }
 
     public void setIdentitySource(String identitySource) {
@@ -32,7 +34,7 @@ public class Security {
     }
 
     public String getIssuer() {
-        return issuer==null && defaultSecurity!=null? defaultSecurity.getIssuer() : issuer;
+        return issuer == null && defaultSecurity != null ? defaultSecurity.getIssuer() : issuer;
     }
 
     public void setIssuer(String issuer) {
@@ -41,7 +43,7 @@ public class Security {
     }
 
     public List<String> getAudiences() {
-        return audiences==null && defaultSecurity!=null? defaultSecurity.getAudiences() : audiences;
+        return audiences == null && defaultSecurity != null ? defaultSecurity.getAudiences() : audiences;
     }
 
     public void setAudiences(List<String> audiences) {
@@ -60,7 +62,7 @@ public class Security {
     public void setType(String type) {
         checkUnspecified(this.type);
         if (SECURITY_TYPE.equals(type)) {
-            throw new ArgumentException(type +" : not a valid security type");
+            throw new O4A_Exception(type + " : not a valid security type");
         }
         this.type = type;
     }
@@ -72,12 +74,12 @@ public class Security {
     public void setAuthorizerType(String authorizerType) {
         checkUnspecified(this.authorizerType);
         if (SECURITY_AUTHORIZER_TYPE.equals(type)) {
-            throw new ArgumentException(type +" : not a valid security authorizer type");
+            throw new O4A_Exception(type + " : not a valid security authorizer type");
         }
         this.authorizerType = authorizerType;
     }
 
     private void checkUnspecified(Object x) {
-        if (x!=null) throw ArgumentException.alreadySpecified();
+        if (x != null) throw O4A_Exception.duplicatedArgument();
     }
 }
