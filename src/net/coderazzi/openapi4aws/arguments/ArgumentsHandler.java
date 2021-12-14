@@ -24,13 +24,17 @@ public class ArgumentsHandler {
     private static final String AUTHORIZER_TYPE = "authorizer-type";
     private static final String TAG = "tag.";
     private static final String PATH = "path.";
-    private static final String INPUT = "input";
+    private static final String FILENAME = "filename";
+    private static final String GLOB = "glob";
+    private static final String OUTPUT = "output-folder";
 
     static {
         argumentHandlers.put(AUTHORIZER, ArgumentsHandler::handleAuthorizer);
         argumentHandlers.put(TAG, ArgumentsHandler::handleTag);
         argumentHandlers.put(PATH, ArgumentsHandler::handlePath);
-        argumentHandlers.put(INPUT, ArgumentsHandler::handleInput);
+        argumentHandlers.put(FILENAME, ArgumentsHandler::handleFilename);
+        argumentHandlers.put(GLOB, ArgumentsHandler::handleGlob);
+        argumentHandlers.put(OUTPUT, ArgumentsHandler::handleOutput);
 
         authorizerConsumers.put(AUTHORIZER_IDENTITY_SOURCE, Authorizer::setIdentitySource);
         authorizerConsumers.put(AUTHORIZER_ISSUER, Authorizer::setIssuer);
@@ -48,7 +52,9 @@ public class ArgumentsHandler {
     private final Map<String, Authorizer> authorizers = new LinkedHashMap<>();
     private final Map<String, Integration> tags = new HashMap<>();
     private final Map<String, Integration> paths = new HashMap<>();
-    private List<String> input = null;
+    private Set<String> filenames = new HashSet<>();
+    private Set<String> globs = new HashSet<>();
+    private Path outputFolder;
 
     public ArgumentsHandler(String[] args) {
         Pattern p = Pattern.compile(String.format("^(?:--)?(%s)([^=]*)=(.+)$",
@@ -70,8 +76,8 @@ public class ArgumentsHandler {
                 throw new O4A_Exception(arg + " : " + ex.getMessage());
             }
         }
-        if (input == null) {
-            throw new O4A_Exception("Missing " + INPUT);
+        if (filenames == null) {
+            throw new O4A_Exception("Missing " + FILENAME);
         }
         authorizers.forEach((name, instance) -> {
             if (!name.isEmpty()) {
@@ -124,7 +130,8 @@ public class ArgumentsHandler {
 
     public Set<Path> getInput() throws IOException {
         Set<Path> ret = new HashSet<>();
-        for (String each : input) {
+        filenames.forEach( x -> ret.add(Paths.get(x)));
+        for (String each : globs) {
             final PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + each);
             Files.walkFileTree(FileSystems.getDefault().getPath(""), new SimpleFileVisitor<Path>() {
                 @Override
@@ -144,14 +151,33 @@ public class ArgumentsHandler {
         return ret;
     }
 
-    private void handleInput(String value, String definition) {
+    public Path getOutput(Path input) {
+        return outputFolder==null? input : outputFolder.resolve(input.getFileName());
+    }
+
+    private void handleOutput(String value, String definition) {
         if (!value.isEmpty()) {
             throw O4A_Exception.unexpectedArgument();
         }
-        if (input != null) {
+        if (outputFolder !=null ){
             throw O4A_Exception.duplicatedArgument();
         }
-        input = convertToNonEmptyList(definition);
+        this.outputFolder = Paths.get(definition);
+    }
+
+    private void handleFilename(String value, String definition) {
+        handleInputList(value, definition, filenames);
+    }
+
+    private void handleGlob(String value, String definition) {
+        handleInputList(value, definition, globs);
+    }
+
+    private void handleInputList(String value, String definition, Collection<String> target) {
+        if (!value.isEmpty()) {
+            throw O4A_Exception.unexpectedArgument();
+        }
+        target.add(definition);
     }
 
     /**

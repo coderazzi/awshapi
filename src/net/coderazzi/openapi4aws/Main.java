@@ -54,7 +54,7 @@ public class Main {
             } catch (O4A_Exception ex) {
                 throw new O4A_Exception(path + ex.getMessage());
             }
-            try (final OutputStream os = Files.newOutputStream(path)) {
+            try (final OutputStream os = Files.newOutputStream(arguments.getOutput(path))) {
                 yaml.dump(specification, new OutputStreamWriter(os));
             }
         }

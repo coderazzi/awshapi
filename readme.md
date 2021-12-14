@@ -51,19 +51,20 @@ Alternatively, authorizer plus scopes can be specified:
 
 In this case, it uses the authorizer with name "authorizer1", with scopes "user.email" and "user.id"
 
+## Defining input / output 
+
+Three parameters manage the input / output tasks:
+- **filename**: allows to specify the input files to process, and it is possible to repeat this
+parameter multiple times. It is an error if the designed filename does not exist.
+- **glob**: which supports specifying the input using filename patterns. 
+It is not an error if this pattern matches no names in the file system.
+- **output-folder**: optional, defines the output folder. 
+If not specified, the input files will be overwritten. 
+
+
 ## Paths / Integrations Using tags
-
-A better option to define integrations is defining openapi tags associated for that path, 
-and using then the following parameters:
-
-- **tag.*TAG***=uri[,authorizer_name,scopes]*
-
-For example, if a route */user/post* has an associated tag *Frontend*, and we define:
-
-    tag.frontend=http://3.64.241.105:12121
-
-This path will be extended to use the endpoint: `http://3.64.241.105:12121/user/post`
 
 ## Versions
 
-- 1.0 : 12th December 2021.
+- 1.0.0 : 12th December 2021.
+- 1.0.1 : 14th December 2021: refactoring
