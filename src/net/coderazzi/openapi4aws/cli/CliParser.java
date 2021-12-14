@@ -1,5 +1,6 @@
-package net.coderazzi.openapi4aws.arguments;
+package net.coderazzi.openapi4aws.cli;
 
+import net.coderazzi.openapi4aws.Configuration;
 import net.coderazzi.openapi4aws.O4A_Exception;
 
 import java.io.IOException;
@@ -10,11 +11,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class ArgumentsHandler {
+class CliParser extends Configuration {
 
     private static final Map<String, MainConsumer> argumentHandlers = new HashMap<>();
     private static final Map<String, AuthorizerConsumer> authorizerConsumers = new HashMap<>();
-    private static final Map<String, Getter<Authorizer>> authorizerCheckers = new HashMap<>();
+    private static final Map<String, Getter<CliAuthorizer>> authorizerCheckers = new HashMap<>();
 
     private static final String AUTHORIZER = "authorizer.";
     private static final String AUTHORIZER_IDENTITY_SOURCE = "identity-source";
@@ -29,34 +30,34 @@ public class ArgumentsHandler {
     private static final String OUTPUT = "output-folder";
 
     static {
-        argumentHandlers.put(AUTHORIZER, ArgumentsHandler::handleAuthorizer);
-        argumentHandlers.put(TAG, ArgumentsHandler::handleTag);
-        argumentHandlers.put(PATH, ArgumentsHandler::handlePath);
-        argumentHandlers.put(FILENAME, ArgumentsHandler::handleFilename);
-        argumentHandlers.put(GLOB, ArgumentsHandler::handleGlob);
-        argumentHandlers.put(OUTPUT, ArgumentsHandler::handleOutput);
+        argumentHandlers.put(AUTHORIZER, CliParser::handleAuthorizer);
+        argumentHandlers.put(TAG, CliParser::handleTag);
+        argumentHandlers.put(PATH, CliParser::handlePath);
+        argumentHandlers.put(FILENAME, CliParser::handleFilename);
+        argumentHandlers.put(GLOB, CliParser::handleGlob);
+        argumentHandlers.put(OUTPUT, CliParser::handleOutput);
 
-        authorizerConsumers.put(AUTHORIZER_IDENTITY_SOURCE, Authorizer::setIdentitySource);
-        authorizerConsumers.put(AUTHORIZER_ISSUER, Authorizer::setIssuer);
+        authorizerConsumers.put(AUTHORIZER_IDENTITY_SOURCE, CliAuthorizer::setIdentitySource);
+        authorizerConsumers.put(AUTHORIZER_ISSUER, CliAuthorizer::setIssuer);
         authorizerConsumers.put(AUTHORIZER_AUDIENCES, (s, a) -> s.setAudiences(convertToNonEmptyList(a)));
-        authorizerConsumers.put(AUTHORIZER_AUTHORIZATION_TYPE, Authorizer::setAuthorizationType);
-        authorizerConsumers.put(AUTHORIZER_TYPE, Authorizer::setAuthorizerType);
+        authorizerConsumers.put(AUTHORIZER_AUTHORIZATION_TYPE, CliAuthorizer::setAuthorizationType);
+        authorizerConsumers.put(AUTHORIZER_TYPE, CliAuthorizer::setAuthorizerType);
 
-        authorizerCheckers.put(AUTHORIZER_IDENTITY_SOURCE, Authorizer::getIdentitySource);
-        authorizerCheckers.put(AUTHORIZER_ISSUER, Authorizer::getIssuer);
-        authorizerCheckers.put(AUTHORIZER_AUDIENCES, Authorizer::getAudiences);
-        authorizerCheckers.put(AUTHORIZER_AUTHORIZATION_TYPE, Authorizer::getAuthorizationType);
-        authorizerCheckers.put(AUTHORIZER_TYPE, Authorizer::getAuthorizerType);
+        authorizerCheckers.put(AUTHORIZER_IDENTITY_SOURCE, CliAuthorizer::getIdentitySource);
+        authorizerCheckers.put(AUTHORIZER_ISSUER, CliAuthorizer::getIssuer);
+        authorizerCheckers.put(AUTHORIZER_AUDIENCES, CliAuthorizer::getAudiences);
+        authorizerCheckers.put(AUTHORIZER_AUTHORIZATION_TYPE, CliAuthorizer::getAuthorizationType);
+        authorizerCheckers.put(AUTHORIZER_TYPE, CliAuthorizer::getAuthorizerType);
     }
 
-    private final Map<String, Authorizer> authorizers = new LinkedHashMap<>();
-    private final Map<String, Integration> tags = new HashMap<>();
-    private final Map<String, Integration> paths = new HashMap<>();
+    private final Map<String, CliAuthorizer> authorizers = new LinkedHashMap<>();
+    private final Map<String, CliIntegration> tags = new HashMap<>();
+    private final Map<String, CliIntegration> paths = new HashMap<>();
     private final Set<String> filenames = new HashSet<>();
     private final Set<String> globs = new HashSet<>();
     private Path outputFolder;
 
-    public ArgumentsHandler(String[] args) {
+    public CliParser(String[] args) {
         Pattern p = Pattern.compile(String.format("^(?:--)?(%s)([^=]*)=(.+)$",
                 String.join("|", argumentHandlers.keySet())));
         for (String arg : args) {
@@ -110,13 +111,15 @@ public class ArgumentsHandler {
         return ret;
     }
 
+    @Override
     public Map<String, Authorizer> getAuthorizers() {
         return authorizers.entrySet().stream().filter(x -> !x.getKey().isEmpty())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    public Integration getSpecification(String path, List<String> tags) {
-        Integration ret = paths.get(path);
+    @Override
+    public CliIntegration getIntegration(String path, List<String> tags) {
+        CliIntegration ret = paths.get(path);
         if (ret == null) {
             for (String tag : tags) {
                 ret = this.tags.get(tag.toLowerCase(Locale.ROOT));
@@ -128,7 +131,7 @@ public class ArgumentsHandler {
         return ret;
     }
 
-    public Set<Path> getInput() throws IOException {
+    public Collection<Path> getPaths() throws IOException {
         Set<Path> ret = new HashSet<>();
         filenames.forEach( x -> ret.add(Paths.get(x)));
         for (String each : globs) {
@@ -151,8 +154,8 @@ public class ArgumentsHandler {
         return ret;
     }
 
-    public Path getOutput(Path input) {
-        return outputFolder==null? input : outputFolder.resolve(input.getFileName());
+    public Path getOutputFolder(){
+        return outputFolder;
     }
 
     private void handleOutput(String value, String definition) {
@@ -194,12 +197,12 @@ public class ArgumentsHandler {
         handleTagOrPath(paths, value, true, "/" + definition.replace(".", "/"));
     }
 
-    private void handleTagOrPath(Map<String, Integration> map, String value, boolean isPath, String definition) {
+    private void handleTagOrPath(Map<String, CliIntegration> map, String value, boolean isPath, String definition) {
         if (map.containsKey(definition)) {
             throw O4A_Exception.duplicatedArgument();
         }
         List<String> parts = convertToNonEmptyList(value);
-        Integration integration = new Integration(parts.get(0), isPath); //uri
+        CliIntegration integration = new CliIntegration(parts.get(0), isPath); //uri
         if (parts.size() > 1) {
             String authorizerName = parts.get(1); //note that it cannot be empty / blank, and is already trimmed
             if (authorizers.get(authorizerName) == null) {
@@ -215,9 +218,9 @@ public class ArgumentsHandler {
             if (!authorizers.isEmpty()) {
                 throw O4A_Exception.duplicatedArgument();
             }
-            Authorizer defaultAuthorizer = new Authorizer(null);
+            CliAuthorizer defaultAuthorizer = new CliAuthorizer(null);
             authorizers.put("", defaultAuthorizer);
-            convertToNonEmptyList(value).forEach(x -> authorizers.put(x, new Authorizer(defaultAuthorizer)));
+            convertToNonEmptyList(value).forEach(x -> authorizers.put(x, new CliAuthorizer(defaultAuthorizer)));
         } else {
             String name = "";
             AuthorizerConsumer authorizerConsumer = authorizerConsumers.get(definition);
@@ -228,7 +231,7 @@ public class ArgumentsHandler {
                     authorizerConsumer = authorizerConsumers.get(definition.substring(0, last).trim());
                 }
             }
-            Authorizer authorizer = authorizers.get(name);
+            CliAuthorizer authorizer = authorizers.get(name);
             if (authorizer == null || authorizerConsumer == null) {
                 throw O4A_Exception.unexpectedArgument();
             }
@@ -237,11 +240,11 @@ public class ArgumentsHandler {
     }
 
     private interface MainConsumer {
-        void consume(ArgumentsHandler self, String key, String value);
+        void consume(CliParser self, String key, String value);
     }
 
     private interface AuthorizerConsumer {
-        void handle(Authorizer s, String arg);
+        void handle(CliAuthorizer s, String arg);
     }
 
     private interface Getter<T> {

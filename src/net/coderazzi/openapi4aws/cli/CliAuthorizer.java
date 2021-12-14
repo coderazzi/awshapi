@@ -1,18 +1,19 @@
-package net.coderazzi.openapi4aws.arguments;
+package net.coderazzi.openapi4aws.cli;
 
+import net.coderazzi.openapi4aws.Configuration;
 import net.coderazzi.openapi4aws.O4A_Exception;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class Authorizer {
+class CliAuthorizer implements Configuration.Authorizer {
 
     private final static Map<Object, Object> AUTHORIZER_FLOWS = Collections.emptyMap();
     private final static String AUTHORIZATION_TYPE = "oauth2";
     private final static String AUTHORIZER_TYPE = "jwt";
 
-    private final Authorizer defaultAuthorizer;
+    private final CliAuthorizer defaultAuthorizer;
     private final Map<Object, Object> flows = AUTHORIZER_FLOWS;
     private String identitySource;
     private String issuer;
@@ -20,10 +21,11 @@ public class Authorizer {
     private String authorizationType;
     private String authorizerType;
 
-    public Authorizer(Authorizer defaultAuthorizer) {
+    public CliAuthorizer(CliAuthorizer defaultAuthorizer) {
         this.defaultAuthorizer = defaultAuthorizer;
     }
 
+    @Override
     public String getIdentitySource() {
         return identitySource == null && defaultAuthorizer != null ? defaultAuthorizer.getIdentitySource() : identitySource;
     }
@@ -33,6 +35,7 @@ public class Authorizer {
         this.identitySource = identitySource;
     }
 
+    @Override
     public String getIssuer() {
         return issuer == null && defaultAuthorizer != null ? defaultAuthorizer.getIssuer() : issuer;
     }
@@ -42,6 +45,7 @@ public class Authorizer {
         this.issuer = issuer;
     }
 
+    @Override
     public List<String> getAudiences() {
         return audiences == null && defaultAuthorizer != null ? defaultAuthorizer.getAudiences() : audiences;
     }
@@ -51,10 +55,12 @@ public class Authorizer {
         this.audiences = audiences;
     }
 
+    @Override
     public Map<Object, Object> getFlows() {
         return flows;
     }
 
+    @Override
     public String getAuthorizationType() {
         return AUTHORIZATION_TYPE;
     }
@@ -67,6 +73,7 @@ public class Authorizer {
         this.authorizationType = authorizationType;
     }
 
+    @Override
     public String getAuthorizerType() {
         return AUTHORIZER_TYPE;
     }

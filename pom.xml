@@ -55,7 +55,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>net.coderazzi.openapi4aws.Main</mainClass>
+                            <mainClass>net.coderazzi.openapi4aws.cli.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

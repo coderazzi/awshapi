@@ -1,8 +1,5 @@
 package net.coderazzi.openapi4aws;
 
-import net.coderazzi.openapi4aws.arguments.ArgumentsHandler;
-import net.coderazzi.openapi4aws.arguments.Authorizer;
-import net.coderazzi.openapi4aws.arguments.Integration;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -14,33 +11,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-public class Main {
+public class Openapi4AWS {
 
     public static final String DEFAULT_INTEGRATION_TYPE = "http_proxy";
     public static final String DEFAULT_INTEGRATION_CONNECTION_TYPE = "INTERNET";
     private static final String PATHS = "paths";
     private static final String DEFAULT_INTEGRATION_PAYLOAD_FORMAT_VERSION = "1.0";
-    private final ArgumentsHandler arguments;
+    private final Configuration configuration;
 
-    Main(ArgumentsHandler handler) {
-        this.arguments = handler;
+    public Openapi4AWS(Configuration handler) {
+        this.configuration = handler;
     }
 
-    public static void main(String[] args) throws IOException {
-        try {
-            new Main(new ArgumentsHandler(args)).handle();
-        } catch (O4A_Exception ex) {
-            System.err.println(ex.getMessage());
-            System.exit(1);
-        }
-    }
-
-    public void handle() throws IOException {
+    public void handle(Collection<Path> paths, Path outputFolder) throws IOException {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         Yaml yaml = new Yaml(options);
         Map<String, Object> specification;
-        for (Path path : arguments.getInput()) {
+        for (Path path : paths) {
             try (final InputStream is = Files.newInputStream(path)) {
                 specification = yaml.load(is);
             } catch (ClassCastException cex) {
@@ -54,14 +42,15 @@ public class Main {
             } catch (O4A_Exception ex) {
                 throw new O4A_Exception(path + ex.getMessage());
             }
-            try (final OutputStream os = Files.newOutputStream(arguments.getOutput(path))) {
+            Path outputPath = outputFolder == null? path : outputFolder.resolve(path.getFileName());
+            try (final OutputStream os = Files.newOutputStream(outputPath)) {
                 yaml.dump(specification, new OutputStreamWriter(os));
             }
         }
     }
 
     private void augment(Map<String, Object> specification) {
-        Map<String, Authorizer> authorizers = arguments.getAuthorizers();
+        Map<String, Configuration.Authorizer> authorizers = configuration.getAuthorizers();
         if (!authorizers.isEmpty()) {
             Map<String, Object> securitySchemas = getMap(getMap(specification, "components"), "securitySchemes");
             authorizers.forEach((name, authorizer) -> securitySchemas.put(name, createSecuritySchema(authorizer)));
@@ -74,7 +63,7 @@ public class Main {
 
                 Map<String, Object> methodSpec = castToMap(v, subLocation);
                 List<String> tags = castToList(methodSpec.get("tags"), subLocation);
-                Integration spec = arguments.getSpecification(path, tags);
+                Configuration.Integration spec = configuration.getIntegration(path, tags);
 
                 if (spec != null) {
                     final Map<String, String> integration = new LinkedHashMap<>();
@@ -98,7 +87,7 @@ public class Main {
         });
     }
 
-    private Map<String, Object> createSecuritySchema(Authorizer authorizer) {
+    private Map<String, Object> createSecuritySchema(Configuration.Authorizer authorizer) {
         Map<String, Object> ret = new LinkedHashMap<>();
         Map<String, Object> authorizerInfo = new LinkedHashMap<>();
         Map<String, Object> configuration = new LinkedHashMap<>();
