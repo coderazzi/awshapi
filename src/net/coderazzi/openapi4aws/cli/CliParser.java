@@ -1,7 +1,6 @@
 package net.coderazzi.openapi4aws.cli;
 
 import net.coderazzi.openapi4aws.Configuration;
-import net.coderazzi.openapi4aws.O4A_Exception;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -14,7 +13,7 @@ class CliParser extends Configuration {
 
     private static final Map<String, MainConsumer> argumentHandlers = new HashMap<>();
     private static final Map<String, AuthorizerConsumer> authorizerConsumers = new HashMap<>();
-    private static final Map<String, Getter<CliAuthorizer>> authorizerCheckers = new HashMap<>();
+    private static final Map<String, Getter<AuthorizerParameter>> authorizerCheckers = new HashMap<>();
 
     private static final String AUTHORIZER = "authorizer.";
     private static final String AUTHORIZER_IDENTITY_SOURCE = "identity-source";
@@ -36,22 +35,22 @@ class CliParser extends Configuration {
         argumentHandlers.put(GLOB, CliParser::handleGlob);
         argumentHandlers.put(OUTPUT, CliParser::handleOutput);
 
-        authorizerConsumers.put(AUTHORIZER_IDENTITY_SOURCE, CliAuthorizer::setIdentitySource);
-        authorizerConsumers.put(AUTHORIZER_ISSUER, CliAuthorizer::setIssuer);
+        authorizerConsumers.put(AUTHORIZER_IDENTITY_SOURCE, AuthorizerParameter::setIdentitySource);
+        authorizerConsumers.put(AUTHORIZER_ISSUER, AuthorizerParameter::setIssuer);
         authorizerConsumers.put(AUTHORIZER_AUDIENCES, (s, a) -> s.setAudiences(convertToNonEmptyList(a)));
-        authorizerConsumers.put(AUTHORIZER_AUTHORIZATION_TYPE, CliAuthorizer::setAuthorizationType);
-        authorizerConsumers.put(AUTHORIZER_TYPE, CliAuthorizer::setAuthorizerType);
+        authorizerConsumers.put(AUTHORIZER_AUTHORIZATION_TYPE, AuthorizerParameter::setAuthorizationType);
+        authorizerConsumers.put(AUTHORIZER_TYPE, AuthorizerParameter::setAuthorizerType);
 
-        authorizerCheckers.put(AUTHORIZER_IDENTITY_SOURCE, CliAuthorizer::getIdentitySource);
-        authorizerCheckers.put(AUTHORIZER_ISSUER, CliAuthorizer::getIssuer);
-        authorizerCheckers.put(AUTHORIZER_AUDIENCES, CliAuthorizer::getAudiences);
-        authorizerCheckers.put(AUTHORIZER_AUTHORIZATION_TYPE, CliAuthorizer::getAuthorizationType);
-        authorizerCheckers.put(AUTHORIZER_TYPE, CliAuthorizer::getAuthorizerType);
+        authorizerCheckers.put(AUTHORIZER_IDENTITY_SOURCE, AuthorizerParameter::getIdentitySource);
+        authorizerCheckers.put(AUTHORIZER_ISSUER, AuthorizerParameter::getIssuer);
+        authorizerCheckers.put(AUTHORIZER_AUDIENCES, AuthorizerParameter::getAudiences);
+        authorizerCheckers.put(AUTHORIZER_AUTHORIZATION_TYPE, AuthorizerParameter::getAuthorizationType);
+        authorizerCheckers.put(AUTHORIZER_TYPE, AuthorizerParameter::getAuthorizerType);
     }
 
-    private final Map<String, CliAuthorizer> authorizers = new LinkedHashMap<>();
-    private final Map<String, CliIntegration> tags = new HashMap<>();
-    private final Map<String, CliIntegration> paths = new HashMap<>();
+    private final Map<String, AuthorizerParameter> authorizers = new LinkedHashMap<>();
+    private final Map<String, IntegrationParameter> tags = new HashMap<>();
+    private final Map<String, IntegrationParameter> paths = new HashMap<>();
     private final Set<String> filenames = new HashSet<>();
     private final Set<String> globs = new HashSet<>();
     private Path outputFolder;
@@ -71,20 +70,20 @@ class CliParser extends Configuration {
                         continue;
                     }
                 }
-                throw O4A_Exception.unexpectedArgument();
-            } catch (O4A_Exception ex) {
-                throw new O4A_Exception(arg + " : " + ex.getMessage());
+                throw CliException.unexpectedArgument();
+            } catch (CliException ex) {
+                throw new CliException(arg + " : " + ex.getMessage());
             }
         }
         if (filenames.isEmpty() && globs.isEmpty()) {
-            throw new O4A_Exception("Missing " + FILENAME + " or " + GLOB);
+            throw new CliException("Missing " + FILENAME + " or " + GLOB);
         }
         authorizers.forEach((name, instance) -> {
             if (!name.isEmpty()) {
                 authorizerCheckers.forEach((prop, checker) -> {
                     if (null == checker.get(instance)) {
                         String missing = AUTHORIZER + prop;
-                        throw new O4A_Exception("Missing " + missing + " or " + missing + "." + name);
+                        throw new CliException("Missing " + missing + " or " + missing + "." + name);
                     }
                 });
             }
@@ -105,7 +104,7 @@ class CliParser extends Configuration {
             }
         }
         if (ret.isEmpty()) {
-            throw new O4A_Exception("invalid value: " + arg);
+            throw new CliException("invalid value: " + arg);
         }
         return ret;
     }
@@ -117,8 +116,8 @@ class CliParser extends Configuration {
     }
 
     @Override
-    public CliIntegration getIntegration(String path, List<String> tags) {
-        CliIntegration ret = paths.get(path);
+    public IntegrationParameter getIntegration(String path, List<String> tags) {
+        IntegrationParameter ret = paths.get(path);
         if (ret == null) {
             for (String tag : tags) {
                 ret = this.tags.get(tag.toLowerCase(Locale.ROOT));
@@ -140,10 +139,10 @@ class CliParser extends Configuration {
 
     private void handleOutput(String value, String definition) {
         if (!value.isEmpty()) {
-            throw O4A_Exception.unexpectedArgument();
+            throw CliException.unexpectedArgument();
         }
         if (outputFolder !=null ){
-            throw O4A_Exception.duplicatedArgument();
+            throw CliException.duplicatedArgument();
         }
         this.outputFolder = Paths.get(definition);
     }
@@ -158,7 +157,7 @@ class CliParser extends Configuration {
 
     private void handleInputList(String value, String definition, Collection<String> target) {
         if (!value.isEmpty()) {
-            throw O4A_Exception.unexpectedArgument();
+            throw CliException.unexpectedArgument();
         }
         target.add(definition);
     }
@@ -177,16 +176,16 @@ class CliParser extends Configuration {
         handleTagOrPath(paths, value, true, "/" + definition.replace(".", "/"));
     }
 
-    private void handleTagOrPath(Map<String, CliIntegration> map, String value, boolean isPath, String definition) {
+    private void handleTagOrPath(Map<String, IntegrationParameter> map, String value, boolean isPath, String definition) {
         if (map.containsKey(definition)) {
-            throw O4A_Exception.duplicatedArgument();
+            throw CliException.duplicatedArgument();
         }
         List<String> parts = convertToNonEmptyList(value);
-        CliIntegration integration = new CliIntegration(parts.get(0), isPath); //uri
+        IntegrationParameter integration = new IntegrationParameter(parts.get(0), isPath); //uri
         if (parts.size() > 1) {
             String authorizerName = parts.get(1); //note that it cannot be empty / blank, and is already trimmed
             if (authorizers.get(authorizerName) == null) {
-                throw new O4A_Exception(authorizerName + " is not a provided authorizer name");
+                throw new CliException(authorizerName + " is not a provided authorizer name");
             }
             integration.setAuthorization(parts.get(1), parts.subList(2, parts.size()));
         }
@@ -196,11 +195,11 @@ class CliParser extends Configuration {
     private void handleAuthorizer(String definition, String value) {
         if ("name".equals(definition)) {
             if (!authorizers.isEmpty()) {
-                throw O4A_Exception.duplicatedArgument();
+                throw CliException.duplicatedArgument();
             }
-            CliAuthorizer defaultAuthorizer = new CliAuthorizer(null);
+            AuthorizerParameter defaultAuthorizer = new AuthorizerParameter(null);
             authorizers.put("", defaultAuthorizer);
-            convertToNonEmptyList(value).forEach(x -> authorizers.put(x, new CliAuthorizer(defaultAuthorizer)));
+            convertToNonEmptyList(value).forEach(x -> authorizers.put(x, new AuthorizerParameter(defaultAuthorizer)));
         } else {
             String name = "";
             AuthorizerConsumer authorizerConsumer = authorizerConsumers.get(definition);
@@ -211,9 +210,9 @@ class CliParser extends Configuration {
                     authorizerConsumer = authorizerConsumers.get(definition.substring(0, last).trim());
                 }
             }
-            CliAuthorizer authorizer = authorizers.get(name);
+            AuthorizerParameter authorizer = authorizers.get(name);
             if (authorizer == null || authorizerConsumer == null) {
-                throw O4A_Exception.unexpectedArgument();
+                throw CliException.unexpectedArgument();
             }
             authorizerConsumer.handle(authorizer, value);
         }
@@ -224,7 +223,7 @@ class CliParser extends Configuration {
     }
 
     private interface AuthorizerConsumer {
-        void handle(CliAuthorizer s, String arg);
+        void handle(AuthorizerParameter s, String arg);
     }
 
     private interface Getter<T> {

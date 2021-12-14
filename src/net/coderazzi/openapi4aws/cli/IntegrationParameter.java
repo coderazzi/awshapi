@@ -4,7 +4,7 @@ import net.coderazzi.openapi4aws.Configuration;
 
 import java.util.List;
 
-class CliIntegration implements Configuration.Integration {
+class IntegrationParameter implements Configuration.Integration {
     private final String uri;
     private final boolean finalUri;
     private String authorizer;
@@ -15,7 +15,7 @@ class CliIntegration implements Configuration.Integration {
      * @param finalUri Set to false for TAG specifications, where the final uri will be composed of this URI plus the
      *                 used path.
      */
-    public CliIntegration(String uri, boolean finalUri) {
+    public IntegrationParameter(String uri, boolean finalUri) {
         this.uri = !finalUri && uri.endsWith("/") ? uri.substring(0, uri.length()-1) : uri;
         this.finalUri = finalUri;
     }

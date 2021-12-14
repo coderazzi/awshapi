@@ -51,7 +51,7 @@ public class Openapi4AWS {
 
     private void augment(Map<String, Object> specification) {
         Map<String, Configuration.Authorizer> authorizers = configuration.getAuthorizers();
-        if (!authorizers.isEmpty()) {
+        if (authorizers!=null && !authorizers.isEmpty()) {
             Map<String, Object> securitySchemas = getMap(getMap(specification, "components"), "securitySchemes");
             authorizers.forEach((name, authorizer) -> securitySchemas.put(name, createSecuritySchema(authorizer)));
         }

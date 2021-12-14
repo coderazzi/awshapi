@@ -12,23 +12,27 @@ public abstract class Configuration {
 
     protected Collection<Path> getPaths(Collection<String> filenames, Collection<String> globs) throws IOException {
         Set<Path> ret = new HashSet<>();
-        filenames.forEach(x -> ret.add(Paths.get(x)));
-        for (String each : globs) {
-            final PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + each);
-            Files.walkFileTree(FileSystems.getDefault().getPath(""), new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
-                    if (pathMatcher.matches(path)) {
-                        ret.add(path);
+        if (filenames != null) {
+            filenames.forEach(x -> ret.add(Paths.get(x)));
+        }
+        if (globs != null) {
+            for (String each : globs) {
+                final PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + each);
+                Files.walkFileTree(FileSystems.getDefault().getPath(""), new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                        if (pathMatcher.matches(path)) {
+                            ret.add(path);
+                        }
+                        return FileVisitResult.CONTINUE;
                     }
-                    return FileVisitResult.CONTINUE;
-                }
 
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+                    @Override
+                    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            }
         }
         return ret;
     }

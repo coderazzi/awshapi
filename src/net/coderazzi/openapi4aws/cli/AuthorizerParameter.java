@@ -7,13 +7,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-class CliAuthorizer implements Configuration.Authorizer {
+class AuthorizerParameter implements Configuration.Authorizer {
 
     private final static Map<Object, Object> AUTHORIZER_FLOWS = Collections.emptyMap();
     private final static String AUTHORIZATION_TYPE = "oauth2";
     private final static String AUTHORIZER_TYPE = "jwt";
 
-    private final CliAuthorizer defaultAuthorizer;
+    private final AuthorizerParameter defaultAuthorizer;
     private final Map<Object, Object> flows = AUTHORIZER_FLOWS;
     private String identitySource;
     private String issuer;
@@ -21,7 +21,7 @@ class CliAuthorizer implements Configuration.Authorizer {
     private String authorizationType;
     private String authorizerType;
 
-    public CliAuthorizer(CliAuthorizer defaultAuthorizer) {
+    public AuthorizerParameter(AuthorizerParameter defaultAuthorizer) {
         this.defaultAuthorizer = defaultAuthorizer;
     }
 
@@ -87,6 +87,6 @@ class CliAuthorizer implements Configuration.Authorizer {
     }
 
     private void checkUnspecified(Object x) {
-        if (x != null) throw O4A_Exception.duplicatedArgument();
+        if (x != null) throw CliException.duplicatedArgument();
     }
 }
