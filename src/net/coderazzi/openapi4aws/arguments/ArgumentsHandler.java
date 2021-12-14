@@ -52,8 +52,8 @@ public class ArgumentsHandler {
     private final Map<String, Authorizer> authorizers = new LinkedHashMap<>();
     private final Map<String, Integration> tags = new HashMap<>();
     private final Map<String, Integration> paths = new HashMap<>();
-    private Set<String> filenames = new HashSet<>();
-    private Set<String> globs = new HashSet<>();
+    private final Set<String> filenames = new HashSet<>();
+    private final Set<String> globs = new HashSet<>();
     private Path outputFolder;
 
     public ArgumentsHandler(String[] args) {
@@ -76,8 +76,8 @@ public class ArgumentsHandler {
                 throw new O4A_Exception(arg + " : " + ex.getMessage());
             }
         }
-        if (filenames == null) {
-            throw new O4A_Exception("Missing " + FILENAME);
+        if (filenames.isEmpty() && globs.isEmpty()) {
+            throw new O4A_Exception("Missing " + FILENAME + " or " + GLOB);
         }
         authorizers.forEach((name, instance) -> {
             if (!name.isEmpty()) {
