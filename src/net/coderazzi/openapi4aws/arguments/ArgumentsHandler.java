@@ -13,41 +13,41 @@ import java.util.stream.Collectors;
 public class ArgumentsHandler {
 
     private static final Map<String, MainConsumer> argumentHandlers = new HashMap<>();
-    private static final Map<String, SecurityConsumer> securityConsumers = new HashMap<>();
-    private static final Map<String, Getter<Security>> securityCheckers = new HashMap<>();
+    private static final Map<String, AuthorizerConsumer> authorizerConsumers = new HashMap<>();
+    private static final Map<String, Getter<Authorizer>> authorizerCheckers = new HashMap<>();
 
-    private static final String SECURITY = "security.";
-    private static final String SECURITY_IDENTITY_SOURCE = "identity_source";
-    private static final String SECURITY_ISSUER = "issuer";
-    private static final String SECURITY_AUDIENCES = "audience";
-    private static final String SECURITY_TYPE = "type";
-    private static final String SECURITY_AUTHORIZER_TYPE = "authorizerType";
+    private static final String AUTHORIZER = "authorizer.";
+    private static final String AUTHORIZER_IDENTITY_SOURCE = "identity-source";
+    private static final String AUTHORIZER_ISSUER = "issuer";
+    private static final String AUTHORIZER_AUDIENCES = "audience";
+    private static final String AUTHORIZER_AUTHORIZATION_TYPE = "authorization-type";
+    private static final String AUTHORIZER_TYPE = "authorizer-type";
     private static final String TAG = "tag.";
     private static final String PATH = "path.";
     private static final String INPUT = "input";
 
     static {
-        argumentHandlers.put(SECURITY, ArgumentsHandler::handleSecurity);
+        argumentHandlers.put(AUTHORIZER, ArgumentsHandler::handleAuthorizer);
         argumentHandlers.put(TAG, ArgumentsHandler::handleTag);
         argumentHandlers.put(PATH, ArgumentsHandler::handlePath);
         argumentHandlers.put(INPUT, ArgumentsHandler::handleInput);
 
-        securityConsumers.put(SECURITY_IDENTITY_SOURCE, Security::setIdentitySource);
-        securityConsumers.put(SECURITY_ISSUER, Security::setIssuer);
-        securityConsumers.put(SECURITY_AUDIENCES, (s, a) -> s.setAudiences(convertToNonEmptyList(a)));
-        securityConsumers.put(SECURITY_TYPE, Security::setType);
-        securityConsumers.put(SECURITY_AUTHORIZER_TYPE, Security::setAuthorizerType);
+        authorizerConsumers.put(AUTHORIZER_IDENTITY_SOURCE, Authorizer::setIdentitySource);
+        authorizerConsumers.put(AUTHORIZER_ISSUER, Authorizer::setIssuer);
+        authorizerConsumers.put(AUTHORIZER_AUDIENCES, (s, a) -> s.setAudiences(convertToNonEmptyList(a)));
+        authorizerConsumers.put(AUTHORIZER_AUTHORIZATION_TYPE, Authorizer::setAuthorizationType);
+        authorizerConsumers.put(AUTHORIZER_TYPE, Authorizer::setAuthorizerType);
 
-        securityCheckers.put(SECURITY_IDENTITY_SOURCE, Security::getIdentitySource);
-        securityCheckers.put(SECURITY_ISSUER, Security::getIssuer);
-        securityCheckers.put(SECURITY_AUDIENCES, Security::getAudiences);
-        securityCheckers.put(SECURITY_TYPE, Security::getType);
-        securityCheckers.put(SECURITY_AUTHORIZER_TYPE, Security::getAuthorizerType);
+        authorizerCheckers.put(AUTHORIZER_IDENTITY_SOURCE, Authorizer::getIdentitySource);
+        authorizerCheckers.put(AUTHORIZER_ISSUER, Authorizer::getIssuer);
+        authorizerCheckers.put(AUTHORIZER_AUDIENCES, Authorizer::getAudiences);
+        authorizerCheckers.put(AUTHORIZER_AUTHORIZATION_TYPE, Authorizer::getAuthorizationType);
+        authorizerCheckers.put(AUTHORIZER_TYPE, Authorizer::getAuthorizerType);
     }
 
-    private final Map<String, Security> securities = new LinkedHashMap<>();
-    private final Map<String, Specification> tags = new HashMap<>();
-    private final Map<String, Specification> paths = new HashMap<>();
+    private final Map<String, Authorizer> authorizers = new LinkedHashMap<>();
+    private final Map<String, Integration> tags = new HashMap<>();
+    private final Map<String, Integration> paths = new HashMap<>();
     private List<String> input = null;
 
     public ArgumentsHandler(String[] args) {
@@ -73,11 +73,11 @@ public class ArgumentsHandler {
         if (input == null) {
             throw new O4A_Exception("Missing " + INPUT);
         }
-        securities.forEach((name, instance) -> {
+        authorizers.forEach((name, instance) -> {
             if (!name.isEmpty()) {
-                securityCheckers.forEach((prop, checker) -> {
+                authorizerCheckers.forEach((prop, checker) -> {
                     if (null == checker.get(instance)) {
-                        String missing = SECURITY + prop;
+                        String missing = AUTHORIZER + prop;
                         throw new O4A_Exception("Missing " + missing + " or " + missing + "." + name);
                     }
                 });
@@ -104,13 +104,13 @@ public class ArgumentsHandler {
         return ret;
     }
 
-    public Map<String, Security> getSecurities() {
-        return securities.entrySet().stream().filter(x -> !x.getKey().isEmpty())
+    public Map<String, Authorizer> getAuthorizers() {
+        return authorizers.entrySet().stream().filter(x -> !x.getKey().isEmpty())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    public Specification getSpecification(String path, List<String> tags) {
-        Specification ret = paths.get(path);
+    public Integration getSpecification(String path, List<String> tags) {
+        Integration ret = paths.get(path);
         if (ret == null) {
             for (String tag : tags) {
                 ret = this.tags.get(tag.toLowerCase(Locale.ROOT));
@@ -168,45 +168,45 @@ public class ArgumentsHandler {
         handleTagOrPath(paths, value, true, "/" + definition.replace(".", "/"));
     }
 
-    private void handleTagOrPath(Map<String, Specification> map, String value, boolean isPath, String definition) {
+    private void handleTagOrPath(Map<String, Integration> map, String value, boolean isPath, String definition) {
         if (map.containsKey(definition)) {
             throw O4A_Exception.duplicatedArgument();
         }
         List<String> parts = convertToNonEmptyList(value);
-        Specification specification = new Specification(parts.get(0), isPath); //uri
+        Integration integration = new Integration(parts.get(0), isPath); //uri
         if (parts.size() > 1) {
-            String securityName = parts.get(1); //note that it cannot be empty / blank, and is already trimmed
-            if (securities.get(securityName) == null) {
-                throw new O4A_Exception(securityName + " is not a provided security name");
+            String authorizerName = parts.get(1); //note that it cannot be empty / blank, and is already trimmed
+            if (authorizers.get(authorizerName) == null) {
+                throw new O4A_Exception(authorizerName + " is not a provided authorizer name");
             }
-            specification.setSecurity(parts.get(1), parts.subList(2, parts.size()));
+            integration.setAuthorization(parts.get(1), parts.subList(2, parts.size()));
         }
-        map.put(definition, specification);
+        map.put(definition, integration);
     }
 
-    private void handleSecurity(String definition, String value) {
+    private void handleAuthorizer(String definition, String value) {
         if ("name".equals(definition)) {
-            if (!securities.isEmpty()) {
+            if (!authorizers.isEmpty()) {
                 throw O4A_Exception.duplicatedArgument();
             }
-            Security defaultSecurity = new Security(null);
-            securities.put("", defaultSecurity);
-            convertToNonEmptyList(value).forEach(x -> securities.put(x, new Security(defaultSecurity)));
+            Authorizer defaultAuthorizer = new Authorizer(null);
+            authorizers.put("", defaultAuthorizer);
+            convertToNonEmptyList(value).forEach(x -> authorizers.put(x, new Authorizer(defaultAuthorizer)));
         } else {
             String name = "";
-            SecurityConsumer securityConsumer = securityConsumers.get(definition);
-            if (securityConsumer == null) {
+            AuthorizerConsumer authorizerConsumer = authorizerConsumers.get(definition);
+            if (authorizerConsumer == null) {
                 int last = definition.lastIndexOf('.');
                 if (last != -1) {
                     name = definition.substring(last + 1).trim();
-                    securityConsumer = securityConsumers.get(definition.substring(0, last).trim());
+                    authorizerConsumer = authorizerConsumers.get(definition.substring(0, last).trim());
                 }
             }
-            Security security = securities.get(name);
-            if (security == null || securityConsumer == null) {
+            Authorizer authorizer = authorizers.get(name);
+            if (authorizer == null || authorizerConsumer == null) {
                 throw O4A_Exception.unexpectedArgument();
             }
-            securityConsumer.securityHandle(security, value);
+            authorizerConsumer.handle(authorizer, value);
         }
     }
 
@@ -214,8 +214,8 @@ public class ArgumentsHandler {
         void consume(ArgumentsHandler self, String key, String value);
     }
 
-    private interface SecurityConsumer {
-        void securityHandle(Security s, String arg);
+    private interface AuthorizerConsumer {
+        void handle(Authorizer s, String arg);
     }
 
     private interface Getter<T> {

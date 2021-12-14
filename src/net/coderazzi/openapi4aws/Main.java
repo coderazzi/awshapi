@@ -1,8 +1,8 @@
 package net.coderazzi.openapi4aws;
 
 import net.coderazzi.openapi4aws.arguments.ArgumentsHandler;
-import net.coderazzi.openapi4aws.arguments.Security;
-import net.coderazzi.openapi4aws.arguments.Specification;
+import net.coderazzi.openapi4aws.arguments.Authorizer;
+import net.coderazzi.openapi4aws.arguments.Integration;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -61,10 +61,10 @@ public class Main {
     }
 
     private void augment(Map<String, Object> specification) {
-        Map<String, Security> securities = arguments.getSecurities();
-        if (!securities.isEmpty()) {
+        Map<String, Authorizer> authorizers = arguments.getAuthorizers();
+        if (!authorizers.isEmpty()) {
             Map<String, Object> securitySchemas = getMap(getMap(specification, "components"), "securitySchemes");
-            securities.forEach((name, security) -> securitySchemas.put(name, createSecuritySchema(security)));
+            authorizers.forEach((name, authorizer) -> securitySchemas.put(name, createSecuritySchema(authorizer)));
         }
 
         getMap(specification, PATHS).forEach((path, pathSpec) -> {
@@ -74,7 +74,7 @@ public class Main {
 
                 Map<String, Object> methodSpec = castToMap(v, subLocation);
                 List<String> tags = castToList(methodSpec.get("tags"), subLocation);
-                Specification spec = arguments.getSpecification(path, tags);
+                Integration spec = arguments.getSpecification(path, tags);
 
                 if (spec != null) {
                     final Map<String, String> integration = new LinkedHashMap<>();
@@ -85,10 +85,10 @@ public class Main {
                     integration.put("uri", spec.getUri(path));
                     methodSpec.put("x-amazon-apigateway-integration", integration);
 
-                    String securitySchema = spec.getSecurity();
-                    if (securitySchema != null) {
+                    String authorizerName = spec.getAuthorizer();
+                    if (authorizerName != null) {
                         Map<String, Object> scopes = new LinkedHashMap<>();
-                        scopes.put(securitySchema, new ArrayList<>(spec.getScopes()));
+                        scopes.put(authorizerName, new ArrayList<>(spec.getScopes()));
                         final List<Object> securityScope = new ArrayList<>();
                         securityScope.add(scopes);
                         methodSpec.put("security", securityScope);
@@ -98,18 +98,18 @@ public class Main {
         });
     }
 
-    private Map<String, Object> createSecuritySchema(Security security) {
+    private Map<String, Object> createSecuritySchema(Authorizer authorizer) {
         Map<String, Object> ret = new LinkedHashMap<>();
-        Map<String, Object> authorizer = new LinkedHashMap<>();
+        Map<String, Object> authorizerInfo = new LinkedHashMap<>();
         Map<String, Object> configuration = new LinkedHashMap<>();
-        ret.put("type", security.getType());
-        ret.put("flows", new HashMap<>(security.getFlows()));
-        ret.put("x-amazon-apigateway-authorizer", authorizer);
-        authorizer.put("identitySource", security.getIdentitySource());
-        authorizer.put("type", security.getAuthorizerType());
-        authorizer.put("jwtConfiguration", configuration);
-        configuration.put("audience", new ArrayList<>(security.getAudiences()));
-        configuration.put("issuer", security.getIssuer());
+        ret.put("type", authorizer.getAuthorizationType());
+        ret.put("flows", new HashMap<>(authorizer.getFlows()));
+        ret.put("x-amazon-apigateway-authorizer", authorizerInfo);
+        authorizerInfo.put("identitySource", authorizer.getIdentitySource());
+        authorizerInfo.put("type", authorizer.getAuthorizerType());
+        authorizerInfo.put("jwtConfiguration", configuration);
+        configuration.put("audience", new ArrayList<>(authorizer.getAudiences()));
+        configuration.put("issuer", authorizer.getIssuer());
         return ret;
     }
 

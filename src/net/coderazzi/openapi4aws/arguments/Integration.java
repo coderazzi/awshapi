@@ -2,10 +2,10 @@ package net.coderazzi.openapi4aws.arguments;
 
 import java.util.List;
 
-public class Specification {
+public class Integration {
     private final String uri;
     private final boolean finalUri;
-    private String security;
+    private String authorizer;
     private List<String> scopes;
 
     /**
@@ -13,18 +13,18 @@ public class Specification {
      * @param finalUri Set to false for TAG specifications, where the final uri will be composed of this URI plus the
      *                 used path.
      */
-    public Specification(String uri, boolean finalUri) {
+    public Integration(String uri, boolean finalUri) {
         this.uri = !finalUri && uri.endsWith("/") ? uri.substring(0, uri.length()-1) : uri;
         this.finalUri = finalUri;
     }
 
-    public void setSecurity(String security, List<String> scopes) {
-        this.security = security;
+    public void setAuthorization(String authorizer, List<String> scopes) {
+        this.authorizer = authorizer;
         this.scopes = scopes;
     }
 
     /**
-     * @return the defined scopes. This can be null if getSecurity is null, otherwise it is a valid list,
+     * @return the defined scopes. This can be null if getAuthorizer is null, otherwise it is a valid list,
      * which could be empty, but cannot contain any blank strings
      */
     public List<String> getScopes() {
@@ -32,10 +32,10 @@ public class Specification {
     }
 
     /**
-     * @return the defined security. It can be null, but not blank
+     * @return the defined authorizer. It can be null, but not blank
      */
-    public String getSecurity() {
-        return security;
+    public String getAuthorizer() {
+        return authorizer;
     }
 
     /**

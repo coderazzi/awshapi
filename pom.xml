@@ -3,10 +3,10 @@
     <groupId>net.coderazzi</groupId>
     <artifactId>opeanapi4aws</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <name>opeanapi4aws</name>
     <description>Artifact to extend openapi specifications to define AWS-specific mappings.</description>
-    <url>https://coderazzi.net/java/opeanapi4aws</url>
+    <url>https://coderazzi.net/opeanapi4aws</url>
     <organization>
         <name>coderazzi</name>
         <url>https://coderazzi.net</url>
@@ -50,11 +50,39 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>net.coderazzi.openapi4aws.Main</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.5.3</version>
                 <configuration>
                     <tagBase>file:///home/coderazzi/development/opeanapi4aws</tagBase>
-                    <mavenExecutorId>forked-specification</mavenExecutorId>
+                    <mavenExecutorId>forked-integration</mavenExecutorId>
                 </configuration>
             </plugin>
             <plugin>
