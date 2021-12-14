@@ -5,7 +5,6 @@ import net.coderazzi.openapi4aws.O4A_Exception;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -132,26 +131,7 @@ class CliParser extends Configuration {
     }
 
     public Collection<Path> getPaths() throws IOException {
-        Set<Path> ret = new HashSet<>();
-        filenames.forEach( x -> ret.add(Paths.get(x)));
-        for (String each : globs) {
-            final PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + each);
-            Files.walkFileTree(FileSystems.getDefault().getPath(""), new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
-                    if (pathMatcher.matches(path)) {
-                        ret.add(path);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        }
-        return ret;
+        return getPaths(filenames, globs);
     }
 
     public Path getOutputFolder(){
