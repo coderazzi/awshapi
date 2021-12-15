@@ -3,7 +3,7 @@
     <groupId>net.coderazzi</groupId>
     <artifactId>openapi4aws</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
     <name>openapi4aws</name>
     <description>Artifact to extend openapi specifications to define AWS-specific mappings.</description>
     <url>https://coderazzi.net/openapi4aws</url>
