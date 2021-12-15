@@ -3,7 +3,7 @@
     <groupId>net.coderazzi</groupId>
     <artifactId>openapi4aws</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.1</version>
     <name>openapi4aws</name>
     <description>Artifact to extend openapi specifications to define AWS-specific mappings.</description>
     <url>https://coderazzi.net/openapi4aws</url>
@@ -82,7 +82,7 @@
                 <version>2.5.3</version>
                 <configuration>
                     <tagBase>file:///home/coderazzi/development/openapi4aws</tagBase>
-                    <mavenExecutorId>forked-integration</mavenExecutorId>
+                    <mavenExecutorId>forked-path</mavenExecutorId>
                 </configuration>
             </plugin>
             <plugin>
