@@ -2,7 +2,8 @@ package net.coderazzi.openapi4aws.cli;
 
 import net.coderazzi.openapi4aws.Configuration;
 
-import java.nio.file.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -114,7 +115,7 @@ class CliParser extends Configuration {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-//    @Override
+    //    @Override
 //    public IntegrationParameter getIntegration(String path, List<String> tags) {
 //        IntegrationParameter ret = paths.get(path);
 //        if (ret == null) {
@@ -137,7 +138,7 @@ class CliParser extends Configuration {
         return getPaths(filenames, globs);
     }
 
-    public Path getOutputFolder(){
+    public Path getOutputFolder() {
         return outputFolder;
     }
 
@@ -145,7 +146,7 @@ class CliParser extends Configuration {
         if (!value.isEmpty()) {
             throw CliException.unexpectedArgument();
         }
-        if (outputFolder !=null ){
+        if (outputFolder != null) {
             throw CliException.duplicatedArgument();
         }
         this.outputFolder = Paths.get(definition);

@@ -44,7 +44,7 @@ public class Openapi4AWS {
             } catch (O4A_Exception ex) {
                 throw new O4A_Exception(path + ex.getMessage());
             }
-            Path outputPath = outputFolder == null? path : outputFolder.resolve(path.getFileName());
+            Path outputPath = outputFolder == null ? path : outputFolder.resolve(path.getFileName());
             try (final OutputStream os = Files.newOutputStream(outputPath)) {
                 yaml.dump(specification, new OutputStreamWriter(os));
             } catch (IOException ioex) {
@@ -55,7 +55,7 @@ public class Openapi4AWS {
 
     private void augment(Map<String, Object> specification) {
         Map<String, Configuration.Authorizer> authorizers = configuration.getAuthorizers();
-        if (authorizers!=null && !authorizers.isEmpty()) {
+        if (authorizers != null && !authorizers.isEmpty()) {
             Map<String, Object> securitySchemas = getMap(getMap(specification, "components"), "securitySchemes");
             authorizers.forEach((name, authorizer) -> securitySchemas.put(name, createSecuritySchema(authorizer)));
         }

@@ -11,12 +11,12 @@ class IntegrationParameter implements Configuration.Integration {
     private List<String> scopes;
 
     /**
-     * @param uri The defined URI
+     * @param uri      The defined URI
      * @param finalUri Set to false for TAG specifications, where the final uri will be composed of this URI plus the
      *                 used path.
      */
     public IntegrationParameter(String uri, boolean finalUri) {
-        this.uri = !finalUri && uri.endsWith("/") ? uri.substring(0, uri.length()-1) : uri;
+        this.uri = !finalUri && uri.endsWith("/") ? uri.substring(0, uri.length() - 1) : uri;
         this.finalUri = finalUri;
     }
 
@@ -48,6 +48,6 @@ class IntegrationParameter implements Configuration.Integration {
      */
     @Override
     public String getUri(String path) {
-        return finalUri? uri : uri + path;
+        return finalUri ? uri : uri + path;
     }
 }

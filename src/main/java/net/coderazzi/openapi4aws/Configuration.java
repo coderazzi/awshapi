@@ -33,8 +33,7 @@ public abstract class Configuration {
                             return FileVisitResult.CONTINUE;
                         }
                     });
-                }
-                catch(IOException iex) {
+                } catch (IOException iex) {
                     throw new O4A_Exception("IOError while looking for glob " + each + ": " + iex);
                 }
             }
@@ -44,9 +43,10 @@ public abstract class Configuration {
 
     /**
      * Utility to find a suitable integration for a route path with given tags.
-     * @param path the route path to match
-     * @param pathTags any tags associated to that path
-     * @param paths integration paths to use, as a map from path to the defined integration
+     *
+     * @param path          the route path to match
+     * @param pathTags      any tags associated to that path
+     * @param paths         integration paths to use, as a map from path to the defined integration
      * @param lowerCaseTags integration tags to use, as a map from the tag names in lower case to the defined
      *                      integrations
      * @return the most suitable integration
