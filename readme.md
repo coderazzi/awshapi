@@ -67,4 +67,4 @@ If not specified, the input files will be overwritten.
 ## Versions
 
 - 1.0.0 : 12th December 2021.
-- 1.0.1 : 14th December 2021: refactoring
+- 1.0.1 : 15th December 2021: major refactoring to support maven plugin.
