@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.coderazzi</groupId>
-    <artifactId>opeanapi4aws</artifactId>
+    <artifactId>openapi4aws</artifactId>
     <packaging>jar</packaging>
     <version>1.0.1-SNAPSHOT</version>
-    <name>opeanapi4aws</name>
+    <name>openapi4aws</name>
     <description>Artifact to extend openapi specifications to define AWS-specific mappings.</description>
-    <url>https://coderazzi.net/opeanapi4aws</url>
+    <url>https://coderazzi.net/openapi4aws</url>
     <organization>
         <name>coderazzi</name>
         <url>https://coderazzi.net</url>
@@ -25,13 +25,13 @@
         </license>
     </licenses>
     <issueManagement>
-        <url>https://github.com/coderazzi/opeanapi4aws/issues</url>
+        <url>https://github.com/coderazzi/openapi4aws/issues</url>
     </issueManagement>
     <scm>
-        <url>https://github.com/coderazzi/opeanapi4aws</url>
-        <connection>scm:git:ssh://git@github.com/coderazzi/opeanapi4aws</connection>
-        <developerConnection>scm:git:ssh://git@github.com/coderazzi/opeanapi4aws</developerConnection>
-        <tag>opeanapi4aws-1.0.0</tag>
+        <url>https://github.com/coderazzi/openapi4aws</url>
+        <connection>scm:git:ssh://git@github.com/coderazzi/openapi4aws</connection>
+        <developerConnection>scm:git:ssh://git@github.com/coderazzi/openapi4aws</developerConnection>
+        <tag>openapi4aws-1.0.0</tag>
     </scm>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -81,7 +81,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.5.3</version>
                 <configuration>
-                    <tagBase>file:///home/coderazzi/development/opeanapi4aws</tagBase>
+                    <tagBase>file:///home/coderazzi/development/openapi4aws</tagBase>
                     <mavenExecutorId>forked-integration</mavenExecutorId>
                 </configuration>
             </plugin>
@@ -111,11 +111,12 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <doctitle>opeanapi4aws</doctitle>
+                    <doctitle>openapi4aws</doctitle>
                     <show>protected</show>
                     <links>
                         <link>https://docs.oracle.com/javase/8/docs/api/</link>
                     </links>
+                    <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
                 </configuration>
             </plugin>
         </plugins>

@@ -2,7 +2,6 @@ package net.coderazzi.openapi4aws.cli;
 
 import net.coderazzi.openapi4aws.Configuration;
 
-import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -39,13 +38,13 @@ class CliParser extends Configuration {
         authorizerConsumers.put(AUTHORIZER_ISSUER, AuthorizerParameter::setIssuer);
         authorizerConsumers.put(AUTHORIZER_AUDIENCES, (s, a) -> s.setAudiences(convertToNonEmptyList(a)));
         authorizerConsumers.put(AUTHORIZER_AUTHORIZATION_TYPE, AuthorizerParameter::setAuthorizationType);
-        authorizerConsumers.put(AUTHORIZER_TYPE, AuthorizerParameter::setAuthorizerType);
+        authorizerConsumers.put(AUTHORIZER_TYPE, AuthorizerParameter::setType);
 
         authorizerCheckers.put(AUTHORIZER_IDENTITY_SOURCE, AuthorizerParameter::getIdentitySource);
         authorizerCheckers.put(AUTHORIZER_ISSUER, AuthorizerParameter::getIssuer);
-        authorizerCheckers.put(AUTHORIZER_AUDIENCES, AuthorizerParameter::getAudiences);
+        authorizerCheckers.put(AUTHORIZER_AUDIENCES, AuthorizerParameter::getAudience);
         authorizerCheckers.put(AUTHORIZER_AUTHORIZATION_TYPE, AuthorizerParameter::getAuthorizationType);
-        authorizerCheckers.put(AUTHORIZER_TYPE, AuthorizerParameter::getAuthorizerType);
+        authorizerCheckers.put(AUTHORIZER_TYPE, AuthorizerParameter::getType);
     }
 
     private final Map<String, AuthorizerParameter> authorizers = new LinkedHashMap<>();
@@ -115,21 +114,26 @@ class CliParser extends Configuration {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
+//    @Override
+//    public IntegrationParameter getIntegration(String path, List<String> tags) {
+//        IntegrationParameter ret = paths.get(path);
+//        if (ret == null) {
+//            for (String tag : tags) {
+//                ret = this.tags.get(tag.toLowerCase(Locale.ROOT));
+//                if (ret != null) {
+//                    break;
+//                }
+//            }
+//        }
+//        return ret;
+//    }
+//
     @Override
-    public IntegrationParameter getIntegration(String path, List<String> tags) {
-        IntegrationParameter ret = paths.get(path);
-        if (ret == null) {
-            for (String tag : tags) {
-                ret = this.tags.get(tag.toLowerCase(Locale.ROOT));
-                if (ret != null) {
-                    break;
-                }
-            }
-        }
-        return ret;
+    public Integration getIntegration(String path, List<String> tags) {
+        return getIntegration(path, tags, this.paths, this.tags);
     }
 
-    public Collection<Path> getPaths() throws IOException {
+    public Collection<Path> getPaths() {
         return getPaths(filenames, globs);
     }
 

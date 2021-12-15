@@ -19,7 +19,7 @@ class AuthorizerParameter implements Configuration.Authorizer {
     private String issuer;
     private List<String> audiences;
     private String authorizationType;
-    private String authorizerType;
+    private String type;
 
     public AuthorizerParameter(AuthorizerParameter defaultAuthorizer) {
         this.defaultAuthorizer = defaultAuthorizer;
@@ -46,8 +46,8 @@ class AuthorizerParameter implements Configuration.Authorizer {
     }
 
     @Override
-    public List<String> getAudiences() {
-        return audiences == null && defaultAuthorizer != null ? defaultAuthorizer.getAudiences() : audiences;
+    public List<String> getAudience() {
+        return audiences == null && defaultAuthorizer != null ? defaultAuthorizer.getAudience() : audiences;
     }
 
     public void setAudiences(List<String> audiences) {
@@ -74,16 +74,16 @@ class AuthorizerParameter implements Configuration.Authorizer {
     }
 
     @Override
-    public String getAuthorizerType() {
+    public String getType() {
         return AUTHORIZER_TYPE;
     }
 
-    public void setAuthorizerType(String authorizerType) {
-        checkUnspecified(this.authorizerType);
+    public void setType(String authorizerType) {
+        checkUnspecified(this.type);
         if (AUTHORIZER_TYPE.equals(authorizationType)) {
             throw new O4A_Exception(authorizationType + " : not a valid authorizer type");
         }
-        this.authorizerType = authorizerType;
+        this.type = authorizerType;
     }
 
     private void checkUnspecified(Object x) {

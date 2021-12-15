@@ -23,7 +23,7 @@ public class Openapi4AWS {
         this.configuration = handler;
     }
 
-    public void handle(Collection<Path> paths, Path outputFolder) throws IOException {
+    public void handle(Collection<Path> paths, Path outputFolder) {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         Yaml yaml = new Yaml(options);
@@ -31,6 +31,8 @@ public class Openapi4AWS {
         for (Path path : paths) {
             try (final InputStream is = Files.newInputStream(path)) {
                 specification = yaml.load(is);
+            } catch (IOException ioex) {
+                throw new O4A_Exception("IOError reading file '" + path + "' : " + ioex);
             } catch (ClassCastException cex) {
                 specification = null;
             }
@@ -45,6 +47,8 @@ public class Openapi4AWS {
             Path outputPath = outputFolder == null? path : outputFolder.resolve(path.getFileName());
             try (final OutputStream os = Files.newOutputStream(outputPath)) {
                 yaml.dump(specification, new OutputStreamWriter(os));
+            } catch (IOException ioex) {
+                throw new O4A_Exception("IOError writing file '" + path + "' : " + ioex);
             }
         }
     }
@@ -95,9 +99,9 @@ public class Openapi4AWS {
         ret.put("flows", new HashMap<>(authorizer.getFlows()));
         ret.put("x-amazon-apigateway-authorizer", authorizerInfo);
         authorizerInfo.put("identitySource", authorizer.getIdentitySource());
-        authorizerInfo.put("type", authorizer.getAuthorizerType());
+        authorizerInfo.put("type", authorizer.getType());
         authorizerInfo.put("jwtConfiguration", configuration);
-        configuration.put("audience", new ArrayList<>(authorizer.getAudiences()));
+        configuration.put("audience", new ArrayList<>(authorizer.getAudience()));
         configuration.put("issuer", authorizer.getIssuer());
         return ret;
     }
