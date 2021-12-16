@@ -11,7 +11,8 @@ The openapi integration is extended on two parts:
 - security: optionally, adding one or more authorizers.
 - paths: extending each method with the associated authorizer and defining an endpoint.
 
-The input to this utility is passed as parameters.
+The input to this utility is passed as parameters. It can be used as well as a meven plugin: 
+https://github.com/coderazzi/openapi4aws-maven-plugin
 
 ## Security / Authorizers
 
