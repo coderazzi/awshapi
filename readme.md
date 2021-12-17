@@ -71,6 +71,25 @@ It is possible to specify any configuration parameters in a separate file, using
 This file should define the parameters in separate lines, using the same syntax.
 Empty lines and starting with the character **#** are discarded.
 
+It is possible to specify multiple external configuration files. An example of a single file would be:
+
+    # a comment
+    authorizer.name=DubaixCognito,Other
+    authorizer.identity-source=$request.header.Authorization
+    authorizer.audience=2f0m9fcoiejij4316u574aq259,7ac34sujrb8gmvj2b6blpi7ruu
+    authorizer.issuer=https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_1T9bfKHNp
+
+    tag.Frontend=http://3.64.241.104:12121/tmp/,DubaixCognito,user.email,user.id
+    path.user.scope2=http://OTHER_PATH:12122/path,Other,user.email
+
+## Usage
+
+To use the utility from the command line, build it or download from maven central.
+The version with build-in dependencies is available as (link depends on version used): 
+https://repo1.maven.org/maven2/net/coderazzi/openapi4aws/1.0.2/openapi4aws-1.0.2-jar-with-dependencies.jar
+
+    java -jar openapi4aws-1.0.2-jar-with-dependencies.jar --configuration=conf.prop
+
 ## Versions
 
 - 1.0.0 : 12th December 2021.

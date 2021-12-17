@@ -2,6 +2,7 @@ package net.coderazzi.openapi4aws.cli;
 
 import net.coderazzi.openapi4aws.Configuration;
 import net.coderazzi.openapi4aws.O4A_Exception;
+import net.coderazzi.openapi4aws.Openapi4AWS;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,7 +13,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-class CliParser extends Configuration {
+/**
+ * Open4AWS configuration using command line arguments, prepended or not with prefix --
+ */
+public class CliParser extends Configuration {
 
     private static final Map<String, ArgumentConsumer> argumentHandlers = new HashMap<>();
     private static final Map<String, AuthorizerConsumer> authorizerConsumers = new HashMap<>();
@@ -62,7 +66,20 @@ class CliParser extends Configuration {
             String.join("|", argumentHandlers.keySet())));
     private Path outputFolder;
 
-    public CliParser(String[] args) {
+    /**
+     * Constructor reading the configuration parameters from a file
+     * @param filename file to read
+     */
+    public CliParser(String filename) {
+        this(readFile(filename));
+    }
+
+    /**
+     * Constructor using parameters array, normally those in the command line
+     *
+     * @param args command line arguments
+     */
+    CliParser(String[] args) {
         readArguments(args);
         authorizers.forEach((name, instance) -> {
             if (!name.isEmpty()) {
@@ -95,7 +112,16 @@ class CliParser extends Configuration {
         return ret;
     }
 
-    private void readArguments(String []args) {
+    static private String[] readFile(String filename) {
+        try {
+            return Files.readAllLines(Paths.get(filename)).stream()
+                    .map(String::trim).filter(x -> !x.isEmpty() && !x.startsWith("#")).toArray(String[]::new);
+        } catch (IOException ex) {
+            throw new O4A_Exception("Cannot read " + CONFIGURATION + " file " + filename + " : " + ex);
+        }
+    }
+
+    private void readArguments(String[] args) {
         for (String arg : args) {
             try {
                 Matcher m = argPattern.matcher(arg);
@@ -123,6 +149,14 @@ class CliParser extends Configuration {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
+    public Map<String, Integration> getPathIntegrations() {
+        return paths.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    public Map<String, Integration> getTagIntegrations() {
+        return paths.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
     @Override
     public Integration getIntegration(String path, List<String> pathTags) {
         return getIntegration(path, pathTags, this.paths, this.tags);
@@ -144,12 +178,7 @@ class CliParser extends Configuration {
     }
 
     private void handleConfiguration(String empty, String definition) {
-        try {
-            readArguments(Files.readAllLines(Paths.get(definition)).stream()
-                    .map(String::trim).filter(x -> !x.isEmpty() && !x.startsWith("#")).toArray(String[]::new));
-        } catch (IOException ex) {
-            throw new O4A_Exception("Cannot read " + CONFIGURATION + " file " + definition + " : " + ex);
-        }
+        readArguments(readFile(definition));
     }
 
     private void handleFilename(String empty, String definition) {
@@ -226,6 +255,16 @@ class CliParser extends Configuration {
 
     private interface Getter<T> {
         Object get(T t);
+    }
+
+    public static void main(String[] args) {
+        try {
+            CliParser configuration = new CliParser(args);
+            new Openapi4AWS(configuration).handle(configuration.getPaths(), configuration.getOutputFolder());
+        } catch (O4A_Exception ex) {
+            System.err.println(ex.getMessage());
+            System.exit(1);
+        }
     }
 
 }
