@@ -8,11 +8,11 @@ class CliException extends O4A_Exception {
     }
 
     public static CliException duplicatedArgument() {
-        return new CliException("already specified");
+        return new CliException("argument already specified");
     }
 
     public static CliException unexpectedArgument() {
-        return new CliException("unexpected");
+        return new CliException("unexpected argument");
     }
 
 }

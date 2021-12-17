@@ -63,9 +63,16 @@ It is not an error if this pattern matches no names in the file system.
 If not specified, the input files will be overwritten. 
 
 
-## Paths / Integrations Using tags
+## Defining the configuration in a separate file
+It is possible to specify any configuration parameters in a separate file, using the argument:
+
+    configuration=filename
+    
+This file should define the parameters in separate lines, using the same syntax.
+Empty lines and starting with the character **#** are discarded.
 
 ## Versions
 
 - 1.0.0 : 12th December 2021.
 - 1.0.1 : 15th December 2021: major refactoring to support maven plugin.
+- 1.1.0 : 17th December 2021: added configuration parameter.

@@ -1,7 +1,10 @@
 package net.coderazzi.openapi4aws.cli;
 
 import net.coderazzi.openapi4aws.Configuration;
+import net.coderazzi.openapi4aws.O4A_Exception;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -11,7 +14,7 @@ import java.util.stream.Collectors;
 
 class CliParser extends Configuration {
 
-    private static final Map<String, MainConsumer> argumentHandlers = new HashMap<>();
+    private static final Map<String, ArgumentConsumer> argumentHandlers = new HashMap<>();
     private static final Map<String, AuthorizerConsumer> authorizerConsumers = new HashMap<>();
     private static final Map<String, Getter<AuthorizerParameter>> authorizerCheckers = new HashMap<>();
 
@@ -26,6 +29,7 @@ class CliParser extends Configuration {
     private static final String FILENAME = "filename";
     private static final String GLOB = "glob";
     private static final String OUTPUT = "output-folder";
+    private static final String CONFIGURATION = "configuration";
 
     static {
         argumentHandlers.put(AUTHORIZER, CliParser::handleAuthorizer);
@@ -34,6 +38,7 @@ class CliParser extends Configuration {
         argumentHandlers.put(FILENAME, CliParser::handleFilename);
         argumentHandlers.put(GLOB, CliParser::handleGlob);
         argumentHandlers.put(OUTPUT, CliParser::handleOutput);
+        argumentHandlers.put(CONFIGURATION, CliParser::handleConfiguration);
 
         authorizerConsumers.put(AUTHORIZER_IDENTITY_SOURCE, AuthorizerParameter::setIdentitySource);
         authorizerConsumers.put(AUTHORIZER_ISSUER, AuthorizerParameter::setIssuer);
@@ -53,31 +58,12 @@ class CliParser extends Configuration {
     private final Map<String, IntegrationParameter> paths = new HashMap<>();
     private final Set<String> filenames = new HashSet<>();
     private final Set<String> globs = new HashSet<>();
+    private final Pattern argPattern = Pattern.compile(String.format("^(?:--)?(%s)([^=]*)=(.+)$",
+            String.join("|", argumentHandlers.keySet())));
     private Path outputFolder;
 
     public CliParser(String[] args) {
-        Pattern p = Pattern.compile(String.format("^(?:--)?(%s)([^=]*)=(.+)$",
-                String.join("|", argumentHandlers.keySet())));
-        for (String arg : args) {
-            try {
-                Matcher m = p.matcher(arg);
-                if (m.matches()) {
-                    String area = m.group(1);
-                    String type = m.group(2).trim();
-                    String value = m.group(3).trim();
-                    if (!value.isEmpty()) {
-                        argumentHandlers.get(area).consume(this, type, value);
-                        continue;
-                    }
-                }
-                throw CliException.unexpectedArgument();
-            } catch (CliException ex) {
-                throw new CliException(arg + " : " + ex.getMessage());
-            }
-        }
-        if (filenames.isEmpty() && globs.isEmpty()) {
-            throw new CliException("Missing " + FILENAME + " or " + GLOB);
-        }
+        readArguments(args);
         authorizers.forEach((name, instance) -> {
             if (!name.isEmpty()) {
                 authorizerCheckers.forEach((prop, checker) -> {
@@ -109,29 +95,37 @@ class CliParser extends Configuration {
         return ret;
     }
 
+    private void readArguments(String []args) {
+        for (String arg : args) {
+            try {
+                Matcher m = argPattern.matcher(arg);
+                if (m.matches()) {
+                    String area = m.group(1);
+                    String type = m.group(2).trim();
+                    String value = m.group(3).trim();
+                    // if area ends with '.', type cannot be empty
+                    if (!value.isEmpty() && (area.endsWith(".") != type.isEmpty())) {
+                        argumentHandlers.get(area).consume(this, type, value);
+                        continue;
+                    }
+                }
+                throw CliException.unexpectedArgument();
+            } catch (CliException ex) {
+                throw new CliException(arg + " : " + ex.getMessage());
+            }
+        }
+
+    }
+
     @Override
     public Map<String, Authorizer> getAuthorizers() {
         return authorizers.entrySet().stream().filter(x -> !x.getKey().isEmpty())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    //    @Override
-//    public IntegrationParameter getIntegration(String path, List<String> tags) {
-//        IntegrationParameter ret = paths.get(path);
-//        if (ret == null) {
-//            for (String tag : tags) {
-//                ret = this.tags.get(tag.toLowerCase(Locale.ROOT));
-//                if (ret != null) {
-//                    break;
-//                }
-//            }
-//        }
-//        return ret;
-//    }
-//
     @Override
-    public Integration getIntegration(String path, List<String> tags) {
-        return getIntegration(path, tags, this.paths, this.tags);
+    public Integration getIntegration(String path, List<String> pathTags) {
+        return getIntegration(path, pathTags, this.paths, this.tags);
     }
 
     public Collection<Path> getPaths() {
@@ -142,29 +136,28 @@ class CliParser extends Configuration {
         return outputFolder;
     }
 
-    private void handleOutput(String value, String definition) {
-        if (!value.isEmpty()) {
-            throw CliException.unexpectedArgument();
-        }
+    private void handleOutput(String empty, String definition) {
         if (outputFolder != null) {
             throw CliException.duplicatedArgument();
         }
         this.outputFolder = Paths.get(definition);
     }
 
-    private void handleFilename(String value, String definition) {
-        handleInputList(value, definition, filenames);
-    }
-
-    private void handleGlob(String value, String definition) {
-        handleInputList(value, definition, globs);
-    }
-
-    private void handleInputList(String value, String definition, Collection<String> target) {
-        if (!value.isEmpty()) {
-            throw CliException.unexpectedArgument();
+    private void handleConfiguration(String empty, String definition) {
+        try {
+            readArguments(Files.readAllLines(Paths.get(definition)).stream()
+                    .map(String::trim).filter(x -> !x.isEmpty() && !x.startsWith("#")).toArray(String[]::new));
+        } catch (IOException ex) {
+            throw new O4A_Exception("Cannot read " + CONFIGURATION + " file " + definition + " : " + ex);
         }
-        target.add(definition);
+    }
+
+    private void handleFilename(String empty, String definition) {
+        filenames.add(definition);
+    }
+
+    private void handleGlob(String empty, String definition) {
+        globs.add(definition);
     }
 
     /**
@@ -223,7 +216,7 @@ class CliParser extends Configuration {
         }
     }
 
-    private interface MainConsumer {
+    private interface ArgumentConsumer {
         void consume(CliParser self, String key, String value);
     }
 

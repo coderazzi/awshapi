@@ -10,7 +10,14 @@ public abstract class Configuration {
 
     public abstract Integration getIntegration(String path, List<String> tags);
 
-    protected Collection<Path> getPaths(Collection<String> filenames, Collection<String> globs) {
+    /**
+     * Utility method to find all the paths associated to a single configuration (filenames + globs)
+     *
+     * @param filenames collection of specific filenames
+     * @param globs     collection of glob specifications, which return no matching paths
+     * @return the existing matching paths
+     */
+    protected final Collection<Path> getPaths(Collection<String> filenames, Collection<String> globs) {
         Set<Path> ret = new HashSet<>();
         if (filenames != null) {
             filenames.forEach(x -> ret.add(Paths.get(x)));
@@ -51,9 +58,9 @@ public abstract class Configuration {
      *                      integrations
      * @return the most suitable integration
      */
-    protected Integration getIntegration(String path, List<String> pathTags,
-                                         Map<String, ? extends Integration> paths,
-                                         Map<String, ? extends Integration> lowerCaseTags) {
+    protected final Integration getIntegration(String path, List<String> pathTags,
+                                               Map<String, ? extends Integration> paths,
+                                               Map<String, ? extends Integration> lowerCaseTags) {
         Integration ret = paths.get(path);
         if (ret == null) {
             for (String tag : pathTags) {
