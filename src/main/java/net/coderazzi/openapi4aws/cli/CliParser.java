@@ -154,7 +154,7 @@ public class CliParser extends Configuration {
     }
 
     public Map<String, Integration> getTagIntegrations() {
-        return paths.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return tags.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override

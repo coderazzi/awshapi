@@ -95,3 +95,4 @@ https://repo1.maven.org/maven2/net/coderazzi/openapi4aws/1.0.2/openapi4aws-1.0.2
 - 1.0.0 : 12th December 2021.
 - 1.0.1 : 15th December 2021: major refactoring to support maven plugin.
 - 1.1.0 : 17th December 2021: added configuration parameter.
+- 1.1.1 : 23rd December 2021: solved bug that returned no tags.
