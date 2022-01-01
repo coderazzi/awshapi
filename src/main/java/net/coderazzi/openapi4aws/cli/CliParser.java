@@ -13,21 +13,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-class Argument implements Comparable<Argument>{
+/**
+ * Helper class to support proper argument sorting
+ */
+class Argument implements Comparable<Argument> {
     final String argument;
     final String area;
     final String type;
     final String value;
     private final int priority;
 
-    Argument(String argument, String area, String type, String value, int argPosition){
+    Argument(String argument, String area, String type, String value, int argPosition) {
         this.argument = argument;
-        this.area= area;
+        this.area = area;
         this.type = type;
-        this.value= value;
+        this.value = value;
         if (area.equals(CliParser.CONFIGURATION)) {
             this.priority = -1;
-        } else if (area.equals(CliParser.AUTHORIZER) && type.equals(CliParser.AUTHORIZER_DEFINITION)){
+        } else if (area.equals(CliParser.AUTHORIZER) && type.equals(CliParser.AUTHORIZER_DEFINITION)) {
             this.priority = -2;
         } else {
             this.priority = argPosition;
@@ -45,13 +48,12 @@ class Argument implements Comparable<Argument>{
  */
 public class CliParser extends Configuration {
 
-    private static final Map<String, ArgumentConsumer> argumentHandlers = new HashMap<>();
-    private static final Map<String, AuthorizerConsumer> authorizerConsumers = new HashMap<>();
-    private static final Map<String, Getter<AuthorizerParameter>> authorizerCheckers = new HashMap<>();
-
     public static final String CONFIGURATION = "configuration";
     public static final String AUTHORIZER = "authorizer.";
     public static final String AUTHORIZER_DEFINITION = "name";
+    private static final Map<String, ArgumentConsumer> argumentHandlers = new HashMap<>();
+    private static final Map<String, AuthorizerConsumer> authorizerConsumers = new HashMap<>();
+    private static final Map<String, Getter<AuthorizerParameter>> authorizerCheckers = new HashMap<>();
     private static final String AUTHORIZER_IDENTITY_SOURCE = "identity-source";
     private static final String AUTHORIZER_ISSUER = "issuer";
     private static final String AUTHORIZER_AUDIENCES = "audience";
@@ -96,6 +98,7 @@ public class CliParser extends Configuration {
 
     /**
      * Constructor reading the configuration parameters from a file
+     *
      * @param filename file to read
      */
     public CliParser(String filename) {
@@ -149,12 +152,22 @@ public class CliParser extends Configuration {
         }
     }
 
+    public static void main(String[] args) {
+        try {
+            CliParser configuration = new CliParser(args);
+            new Openapi4AWS(configuration).handle(configuration.getPaths(), configuration.getOutputFolder());
+        } catch (O4A_Exception ex) {
+            System.err.println(ex.getMessage());
+            System.exit(1);
+        }
+    }
+
     /**
      * Parses the given arguments. If strict is True, arguments cannot be preceded with dashes
      */
     private void handleArguments(String[] args, boolean strict) {
         List<Argument> ret = new ArrayList<>();
-        Boolean usingDashes = strict? false : null;
+        Boolean usingDashes = strict ? false : null;
         for (String arg : args) {
             Matcher m = argPattern.matcher(arg);
             if (m.matches()) {
@@ -255,7 +268,7 @@ public class CliParser extends Configuration {
         map.put(definition, integration);
     }
 
-    private AuthorizerParameter getDefaultAuthorizer(){
+    private AuthorizerParameter getDefaultAuthorizer() {
         AuthorizerParameter defaultAuthorizer = authorizers.get("");
         if (defaultAuthorizer == null) {
             authorizers.put("", defaultAuthorizer = new AuthorizerParameter(null));
@@ -295,16 +308,6 @@ public class CliParser extends Configuration {
 
     private interface Getter<T> {
         Object get(T t);
-    }
-
-    public static void main(String[] args) {
-        try {
-            CliParser configuration = new CliParser(args);
-            new Openapi4AWS(configuration).handle(configuration.getPaths(), configuration.getOutputFolder());
-        } catch (O4A_Exception ex) {
-            System.err.println(ex.getMessage());
-            System.exit(1);
-        }
     }
 
 }
