@@ -31,7 +31,6 @@ class AuthorizerParameter implements Configuration.Authorizer {
     }
 
     public void setIdentitySource(String identitySource) {
-        checkUnspecified(this.identitySource);
         this.identitySource = identitySource;
     }
 
@@ -41,7 +40,6 @@ class AuthorizerParameter implements Configuration.Authorizer {
     }
 
     public void setIssuer(String issuer) {
-        checkUnspecified(this.issuer);
         this.issuer = issuer;
     }
 
@@ -51,7 +49,6 @@ class AuthorizerParameter implements Configuration.Authorizer {
     }
 
     public void setAudiences(List<String> audiences) {
-        checkUnspecified(this.audiences);
         this.audiences = audiences;
     }
 
@@ -66,7 +63,6 @@ class AuthorizerParameter implements Configuration.Authorizer {
     }
 
     public void setAuthorizationType(String authorizationType) {
-        checkUnspecified(this.authorizationType);
         if (AUTHORIZATION_TYPE.equals(authorizationType)) {
             throw new O4A_Exception(authorizationType + " : not a valid authorization type");
         }
@@ -79,14 +75,10 @@ class AuthorizerParameter implements Configuration.Authorizer {
     }
 
     public void setType(String authorizerType) {
-        checkUnspecified(this.type);
         if (AUTHORIZER_TYPE.equals(authorizationType)) {
             throw new O4A_Exception(authorizationType + " : not a valid authorizer type");
         }
         this.type = authorizerType;
     }
 
-    private void checkUnspecified(Object x) {
-        if (x != null) throw CliException.duplicatedArgument();
-    }
 }

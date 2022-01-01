@@ -13,6 +13,33 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+class Argument implements Comparable<Argument>{
+    final String argument;
+    final String area;
+    final String type;
+    final String value;
+    private final int priority;
+
+    Argument(String argument, String area, String type, String value, int argPosition){
+        this.argument = argument;
+        this.area= area;
+        this.type = type;
+        this.value= value;
+        if (area.equals(CliParser.CONFIGURATION)) {
+            this.priority = -1;
+        } else if (area.equals(CliParser.AUTHORIZER) && type.equals(CliParser.AUTHORIZER_DEFINITION)){
+            this.priority = -2;
+        } else {
+            this.priority = argPosition;
+        }
+    }
+
+    @Override
+    public int compareTo(Argument argument) {
+        return this.priority - argument.priority;
+    }
+}
+
 /**
  * Open4AWS configuration using command line arguments, prepended or not with prefix --
  */
@@ -22,7 +49,9 @@ public class CliParser extends Configuration {
     private static final Map<String, AuthorizerConsumer> authorizerConsumers = new HashMap<>();
     private static final Map<String, Getter<AuthorizerParameter>> authorizerCheckers = new HashMap<>();
 
-    private static final String AUTHORIZER = "authorizer.";
+    public static final String CONFIGURATION = "configuration";
+    public static final String AUTHORIZER = "authorizer.";
+    public static final String AUTHORIZER_DEFINITION = "name";
     private static final String AUTHORIZER_IDENTITY_SOURCE = "identity-source";
     private static final String AUTHORIZER_ISSUER = "issuer";
     private static final String AUTHORIZER_AUDIENCES = "audience";
@@ -33,7 +62,6 @@ public class CliParser extends Configuration {
     private static final String FILENAME = "filename";
     private static final String GLOB = "glob";
     private static final String OUTPUT = "output-folder";
-    private static final String CONFIGURATION = "configuration";
 
     static {
         argumentHandlers.put(AUTHORIZER, CliParser::handleAuthorizer);
@@ -62,7 +90,7 @@ public class CliParser extends Configuration {
     private final Map<String, IntegrationParameter> paths = new HashMap<>();
     private final Set<String> filenames = new HashSet<>();
     private final Set<String> globs = new HashSet<>();
-    private final Pattern argPattern = Pattern.compile(String.format("^(?:--)?(%s)([^=]*)=(.+)$",
+    private final Pattern argPattern = Pattern.compile(String.format("^(--)?(%s)([^=]*)=(.+)$",
             String.join("|", argumentHandlers.keySet())));
     private Path outputFolder;
 
@@ -80,7 +108,7 @@ public class CliParser extends Configuration {
      * @param args command line arguments
      */
     CliParser(String[] args) {
-        readArguments(args);
+        handleArguments(args, false);
         authorizers.forEach((name, instance) -> {
             if (!name.isEmpty()) {
                 authorizerCheckers.forEach((prop, checker) -> {
@@ -121,26 +149,40 @@ public class CliParser extends Configuration {
         }
     }
 
-    private void readArguments(String[] args) {
+    /**
+     * Parses the given arguments. If strict is True, arguments cannot be preceded with dashes
+     */
+    private void handleArguments(String[] args, boolean strict) {
+        List<Argument> ret = new ArrayList<>();
+        Boolean usingDashes = strict? false : null;
         for (String arg : args) {
-            try {
-                Matcher m = argPattern.matcher(arg);
-                if (m.matches()) {
-                    String area = m.group(1);
-                    String type = m.group(2).trim();
-                    String value = m.group(3).trim();
+            Matcher m = argPattern.matcher(arg);
+            if (m.matches()) {
+                boolean dashes = m.group(1) != null;
+                // be coherent on the use of -- when preceding them in the command line
+                // (and they are not supported in configuration files, where strict is true)
+                if (usingDashes == null || usingDashes == dashes) {
+                    usingDashes = dashes;
+                    String area = m.group(2);
+                    String type = m.group(3).trim();
+                    String value = m.group(4).trim();
                     // if area ends with '.', type cannot be empty
                     if (!value.isEmpty() && (area.endsWith(".") != type.isEmpty())) {
-                        argumentHandlers.get(area).consume(this, type, value);
+                        ret.add(new Argument(arg, area, type, value, ret.size()));
                         continue;
                     }
                 }
-                throw CliException.unexpectedArgument();
+            }
+            throw CliException.unexpectedArgument();
+        }
+        Collections.sort(ret);
+        for (Argument arg : ret) {
+            try {
+                argumentHandlers.get(arg.area).consume(this, arg.type, arg.value);
             } catch (CliException ex) {
-                throw new CliException(arg + " : " + ex.getMessage());
+                throw new CliException(arg.argument + " : " + ex.getMessage());
             }
         }
-
     }
 
     @Override
@@ -171,14 +213,11 @@ public class CliParser extends Configuration {
     }
 
     private void handleOutput(String empty, String definition) {
-        if (outputFolder != null) {
-            throw CliException.duplicatedArgument();
-        }
         this.outputFolder = Paths.get(definition);
     }
 
     private void handleConfiguration(String empty, String definition) {
-        readArguments(readFile(definition));
+        handleArguments(readFile(definition), true);
     }
 
     private void handleFilename(String empty, String definition) {
@@ -204,9 +243,6 @@ public class CliParser extends Configuration {
     }
 
     private void handleTagOrPath(Map<String, IntegrationParameter> map, String value, boolean isPath, String definition) {
-        if (map.containsKey(definition)) {
-            throw CliException.duplicatedArgument();
-        }
         List<String> parts = convertToNonEmptyList(value);
         IntegrationParameter integration = new IntegrationParameter(parts.get(0), isPath); //uri
         if (parts.size() > 1) {
@@ -219,13 +255,17 @@ public class CliParser extends Configuration {
         map.put(definition, integration);
     }
 
+    private AuthorizerParameter getDefaultAuthorizer(){
+        AuthorizerParameter defaultAuthorizer = authorizers.get("");
+        if (defaultAuthorizer == null) {
+            authorizers.put("", defaultAuthorizer = new AuthorizerParameter(null));
+        }
+        return defaultAuthorizer;
+    }
+
     private void handleAuthorizer(String definition, String value) {
-        if ("name".equals(definition)) {
-            if (!authorizers.isEmpty()) {
-                throw CliException.duplicatedArgument();
-            }
-            AuthorizerParameter defaultAuthorizer = new AuthorizerParameter(null);
-            authorizers.put("", defaultAuthorizer);
+        if (AUTHORIZER_DEFINITION.equals(definition)) {
+            final AuthorizerParameter defaultAuthorizer = getDefaultAuthorizer();
             convertToNonEmptyList(value).forEach(x -> authorizers.put(x, new AuthorizerParameter(defaultAuthorizer)));
         } else {
             String name = "";
